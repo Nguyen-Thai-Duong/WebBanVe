@@ -19,13 +19,19 @@
     <div class="topbar py-2">
         <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div class="d-flex align-items-center gap-3">
-                <span><i class="bx bx-phone"></i> Tổng đài: <strong>1900 6067</strong></span>
-                <span class="d-none d-md-inline"><i class="bx bx-map"></i> 486-486A Lê Văn Lương, Quận 7, TP.HCM</span>
-            </div>
-            <div class="d-flex align-items-center gap-3">
                 <a href="#" class="text-white text-decoration-none"><i class="bx bxl-apple"></i> Tải App</a>
                 <a href="#" class="text-white text-decoration-none"><i class="bx bx-globe"></i> VI</a>
                 <a href="#" class="text-white text-decoration-none">EN</a>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="#" class="btn btn-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                    <i class="bx bx-user-circle fs-5 text-warning"></i>
+                    <span>Đăng nhập</span>
+                </a>
+                <a href="#" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                    <i class="bx bx-edit-alt fs-5"></i>
+                    <span>Đăng ký</span>
+                </a>
             </div>
         </div>
     </div>
