@@ -28,10 +28,10 @@
     String[] statuses = {"Scheduled", "Departed", "Arrived", "Delayed", "Cancelled"};
     DateTimeFormatter tableFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     String contextPath = request.getContextPath();
-    String assetRoot = contextPath + "/sneat-1.0.0/sneat-1.0.0";
-    String vendorPath = assetRoot + "/assets/vendor";
-    String cssPath = assetRoot + "/assets/css";
-    String jsPath = assetRoot + "/assets/js";
+    String assetBase = contextPath + "/assets/sneat-1.0.0/assets";
+    String vendorPath = assetBase + "/vendor";
+    String cssPath = assetBase + "/css";
+    String jsPath = assetBase + "/js";
 
     String flashMessage = (String) session.getAttribute("tripMessage");
     String flashType = (String) session.getAttribute("tripMessageType");
@@ -41,7 +41,7 @@
     }
 %>
 <!DOCTYPE html>
-<html lang="vi" class="light-style layout-menu-fixed" data-theme="theme-default">
+<html lang="vi" class="light-style layout-menu-fixed" data-theme="theme-default" data-assets-path="<%= assetBase %>/">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -349,5 +349,6 @@
 <script src="<%= vendorPath %>/libs/popper/popper.js"></script>
 <script src="<%= vendorPath %>/js/bootstrap.js"></script>
 <script src="<%= vendorPath %>/js/menu.js"></script>
+<script src="<%= jsPath %>/main.js"></script>
 </body>
 </html>
