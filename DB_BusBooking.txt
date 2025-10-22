@@ -1,0 +1,172 @@
+-- Bước 1: Tạo Database (Nếu chưa có)
+-- CREATE DATABASE BusBookingSystem1;
+-- GO
+
+-- USE BusBookingSystem;
+-- GO
+
+-----------------------------------------------------------------------------------
+-- 1. Quản Lý Người Dùng & Vai Trò (User & Role Management)
+-----------------------------------------------------------------------------------
+
+CREATE TABLE [USER] (
+    UserID INT PRIMARY KEY IDENTITY(1,1),
+    -- Cột EmployeeCode phải là UNIQUE để có thể được tham chiếu làm khóa ngoại
+    EmployeeCode VARCHAR(10) UNIQUE, 
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(100) UNIQUE NOT NULL, 
+    PasswordHash VARCHAR(255) NOT NULL,
+    PhoneNumber VARCHAR(20) NOT NULL,
+    [Role] NVARCHAR(50) NOT NULL CHECK ([Role] IN ('Admin', 'Staff', 'BusOperator', 'Customer')),
+    [Status] NVARCHAR(50) NOT NULL DEFAULT 'Active' CHECK ([Status] IN ('Active', 'Inactive', 'Blocked')),
+    Address NVARCHAR(255),
+    -- Các trường Audit (Tạo/Cập nhật)
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    UpdatedAt DATETIME DEFAULT GETDATE()
+);
+
+---
+
+CREATE TABLE VEHICLE (
+    VehicleID INT PRIMARY KEY IDENTITY(1,1),
+    
+    -- THAY ĐỔI: Sử dụng trực tiếp EmployeeCode
+    EmployeeCode VARCHAR(10) NOT NULL, -- Mã Nhân viên  (VD: BOxxxx)
+    
+    LicensePlate NVARCHAR(50) UNIQUE NOT NULL,
+    Model NVARCHAR(100),
+    Capacity INT NOT NULL CHECK (Capacity > 0),
+    
+    -- Thông tin quản lý phương tiện
+    DateAdded DATETIME DEFAULT GETDATE(),
+    MaintenanceIntervalDays INT,
+    LastMaintenanceDate DATE,
+    LastRepairDate DATE,
+    Details NVARCHAR(MAX), 
+
+    -- Trạng thái và Tình hình xe
+    VehicleStatus NVARCHAR(50) NOT NULL DEFAULT 'Available' CHECK (VehicleStatus IN ('Available', 'InTrip', 'InMaintenance', 'Retired')),
+    CurrentCondition NVARCHAR(50),
+    
+    -- Foreign Key: Tham chiếu đến cột EmployeeCode trong bảng [USER]
+    CONSTRAINT FK_VEHICLE_EmployeeCode 
+        FOREIGN KEY (EmployeeCode) 
+        REFERENCES [USER](EmployeeCode)
+);
+-- Bảng GUEST không cần tạo (vì Guest được định danh bằng PhoneNumber & Email trong Booking)
+
+-----------------------------------------------------------------------------------
+-- 2. Quản Lý Tuyến & Chuyến Đi (Route & Trip Management)
+-----------------------------------------------------------------------------------
+
+CREATE TABLE ROUTE (
+    RouteID INT PRIMARY KEY IDENTITY(1,1),
+    Origin NVARCHAR(100) NOT NULL,
+    Destination NVARCHAR(100) NOT NULL,
+    Distance DECIMAL(10, 2), -- Có thể NULL
+    UNIQUE (Origin, Destination)
+);
+
+CREATE TABLE TRIP (
+    TripID INT PRIMARY KEY IDENTITY(1,1),
+    RouteID INT NOT NULL, -- FK: Tuyến đường
+    DepartureTime DATETIME NOT NULL,
+    ArrivalTime DATETIME,
+    Price DECIMAL(10, 2) NOT NULL CHECK (Price >= 0),
+    VehicleID INT NOT NULL, -- FK: Xe được chỉ định
+    OperatorID INT NOT NULL, -- FK: Nhà xe điều hành
+    TripStatus NVARCHAR(50) NOT NULL DEFAULT 'Scheduled' 
+        CHECK (TripStatus IN ('Scheduled', 'Departed', 'Arrived', 'Delayed', 'Cancelled')),
+    -- Foreign Keys
+    CONSTRAINT FK_TRIP_ROUTE FOREIGN KEY (RouteID) REFERENCES ROUTE(RouteID),
+    CONSTRAINT FK_TRIP_VEHICLE FOREIGN KEY (VehicleID) REFERENCES VEHICLE(VehicleID),
+    CONSTRAINT FK_TRIP_BUSOPERATOR FOREIGN KEY (OperatorID) REFERENCES [USER](UserID)
+);
+
+-----------------------------------------------------------------------------------
+-- 3. Quản Lý Đặt Chỗ & Vé (Booking & Ticket Management)
+-----------------------------------------------------------------------------------
+
+CREATE TABLE BOOKING (
+    BookingID INT PRIMARY KEY IDENTITY(1,1),
+    TripID INT NOT NULL, -- FK: Chuyến đi đã đặt
+    UserID INT, -- FK: Customer (NULL nếu là Guest)
+    GuestPhoneNumber VARCHAR(20), -- SĐT cho Guest booking
+    GuestEmail NVARCHAR(100), -- THÊM MỚI: Email cho Guest booking
+    BookingDate DATETIME DEFAULT GETDATE(),
+    BookingStatus NVARCHAR(50) NOT NULL DEFAULT 'Pending' 
+        CHECK (BookingStatus IN ('Pending', 'Confirmed', 'Cancelled', 'Void')),
+    SeatNumber NVARCHAR(10) NOT NULL,
+    
+    -- THÊM MỚI: Trạng thái của Ghế (để hiển thị ghế đã được đặt hay chưa/đang giữ chỗ)
+    SeatStatus NVARCHAR(50) NOT NULL DEFAULT 'Booked' CHECK (SeatStatus IN ('Booked', 'Reserved', 'Cancelled')),
+    
+    TTL_Expiry DATETIME, -- Time To Live (Thời gian giữ chỗ)
+    -- Foreign Keys
+    CONSTRAINT FK_BOOKING_TRIP FOREIGN KEY (TripID) REFERENCES TRIP(TripID),
+    CONSTRAINT FK_BOOKING_CUSTOMER FOREIGN KEY (UserID) REFERENCES [USER](UserID),
+    -- Ràng buộc: Phải có UserID (Customer) HOẶC GuestPhoneNumber (Guest)
+    CONSTRAINT CHK_CUSTOMER_OR_GUEST CHECK (UserID IS NOT NULL OR GuestPhoneNumber IS NOT NULL)
+);
+
+CREATE TABLE PAYMENT (
+    PaymentID INT PRIMARY KEY IDENTITY(1,1),
+    BookingID INT NOT NULL, -- FK: Đơn đặt chỗ liên quan
+    Amount DECIMAL(10, 2) NOT NULL,
+    TransactionDate DATETIME DEFAULT GETDATE(),
+    [Method] NVARCHAR(50),
+
+    [Type] NVARCHAR(50) NOT NULL CHECK ([Type] IN ('Payment', 'Refund', 'Fee')),
+    TransactionRef VARCHAR(100), -- Mã giao dịch bên thứ 3 (Payment Gateway)
+    -- Foreign Key
+    CONSTRAINT FK_PAYMENT_BOOKING FOREIGN KEY (BookingID) REFERENCES BOOKING(BookingID)
+);
+
+CREATE TABLE TICKET (
+    TicketID INT PRIMARY KEY IDENTITY(1,1),
+    BookingID INT UNIQUE NOT NULL, -- FK: Nối với Booking (1-1)
+    TicketNumber VARCHAR(100) UNIQUE NOT NULL, -- Mã QR/Barcode
+    TicketStatus NVARCHAR(50) NOT NULL DEFAULT 'Issued' CHECK (TicketStatus IN ('Issued', 'Used', 'Void')),
+    IssuedDate DATETIME DEFAULT GETDATE(),
+    CheckedInBy INT, -- FK: Staff đã xác minh
+    CheckedInAt DATETIME, -- Thời gian Check-in
+    -- Foreign Keys
+    CONSTRAINT FK_TICKET_BOOKING FOREIGN KEY (BookingID) REFERENCES BOOKING(BookingID),
+    CONSTRAINT FK_TICKET_CHECKEDINBY FOREIGN KEY (CheckedInBy) REFERENCES [USER](UserID)
+);
+
+-----------------------------------------------------------------------------------
+-- 4. Quản Lý Đánh Giá & Hỗ Trợ (Review & Support)
+-----------------------------------------------------------------------------------
+
+CREATE TABLE TRIP_REVIEW (
+    ReviewID INT PRIMARY KEY IDENTITY(1,1),
+    TripID INT NOT NULL, -- FK: Chuyến đi được đánh giá
+    CustomerID INT NOT NULL, -- FK: Customer đã viết đánh giá
+    Rating INT NOT NULL CHECK (Rating >= 1 AND Rating <= 5),
+    Comment NVARCHAR(256),
+    ReviewDate DATETIME DEFAULT GETDATE(),
+    -- Foreign Keys
+    CONSTRAINT FK_REVIEW_TRIP FOREIGN KEY (TripID) REFERENCES TRIP(TripID),
+    CONSTRAINT FK_REVIEW_CUSTOMER FOREIGN KEY (CustomerID) REFERENCES [USER](UserID)
+);
+
+CREATE TABLE SUPPORT_TICKET (
+    SupportID INT PRIMARY KEY IDENTITY(1,1),
+    CustomerID INT, -- FK: Customer yêu cầu (NULL nếu là Guest/Anonymous)
+    BookingID INT, -- FK: Booking liên quan (nếu có)
+    StaffAssigned INT, -- FK: Staff được giao xử lý
+    Category NVARCHAR(100),
+    IssueDescription NVARCHAR(MAX) NOT NULL,
+    
+    -- THÊM MỚI: Cách xử lý vấn đề
+    ResolutionDetails NVARCHAR(MAX), 
+
+    [Status] NVARCHAR(50) NOT NULL DEFAULT 'Open' CHECK ([Status] IN ('Open', 'InProgress', 'Closed')),
+    OpenedDate DATETIME DEFAULT GETDATE(),
+    ClosedDate DATETIME,
+    -- Foreign Keys
+    CONSTRAINT FK_SUPPORT_CUSTOMER FOREIGN KEY (CustomerID) REFERENCES [USER](UserID),
+    CONSTRAINT FK_SUPPORT_BOOKING FOREIGN KEY (BookingID) REFERENCES BOOKING(BookingID),
+    CONSTRAINT FK_SUPPORT_STAFF FOREIGN KEY (StaffAssigned) REFERENCES [USER](UserID)
+);
