@@ -24,11 +24,11 @@
                 <a href="#" class="text-white text-decoration-none">EN</a>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <a href="#" class="btn btn-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                <a href="<%= request.getContextPath() %>/login-form.jsp" class="btn btn-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
                     <i class="bx bx-user-circle fs-5 text-warning"></i>
                     <span>Đăng nhập</span>
                 </a>
-                <a href="#" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                <a href="<%= request.getContextPath() %>/register-form.jsp" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
                     <i class="bx bx-edit-alt fs-5"></i>
                     <span>Đăng ký</span>
                 </a>
