@@ -635,7 +635,7 @@
   transition: 0.15s ease all;
 }
 
-@keyframes opaque {
+@-webkit-keyframes opaque {
   0% {
     opacity: 0;
   }

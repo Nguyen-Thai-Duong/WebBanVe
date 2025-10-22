@@ -4247,7 +4247,7 @@ textarea.form-control-lg {
   }
 }
 
-@keyframes progress-bar-stripes {
+@-webkit-keyframes progress-bar-stripes {
   0% {
     background-position-x: 0.75rem;
   }
@@ -5357,7 +5357,7 @@ textarea.form-control-lg {
   }
 }
 
-@keyframes spinner-grow {
+@-webkit-keyframes spinner-grow {
   0% {
     transform: scale(0);
   }
@@ -5524,7 +5524,7 @@ textarea.form-control-lg {
   }
 }
 
-@keyframes placeholder-glow {
+@-webkit-keyframes placeholder-glow {
   50% {
     opacity: 0.2;
   }
@@ -5545,7 +5545,7 @@ textarea.form-control-lg {
   }
 }
 
-@keyframes placeholder-wave {
+@-webkit-keyframes placeholder-wave {
   100% {
     -webkit-mask-position: -200% 0%;
             mask-position: -200% 0%;
@@ -15630,7 +15630,7 @@ html:not(.layout-footer-fixed) .content-wrapper {
     opacity: 0.5;
   }
 }
-@keyframes menuAnimation {
+@-webkit-keyframes menuAnimation {
   0% {
     opacity: 0;
   }

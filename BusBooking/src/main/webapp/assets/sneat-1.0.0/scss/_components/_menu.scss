@@ -207,7 +207,7 @@
     font-size: $menu-font-size;
   }
 
-  .menu-item.active:not(.open) > {
+  .menu-item.active:not(.open)  {
     .menu-link {
       font-weight: $font-weight-semibold;
     }

@@ -205,8 +205,10 @@ $font-family-sans-serif: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Sego
 $font-family-serif: Georgia, 'Times New Roman', serif !default; // (C)
 $font-family-monospace: 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !default;
 // stylelint-enable value-keyword-case
-$font-family-base: var(--#{$variable-prefix}font-sans-serif) !default;
-$font-family-code: var(--#{$variable-prefix}font-monospace) !default;
+// Tên biến CSS được nội suy hoàn toàn
+$font-family-base: var(#{"--#{$variable-prefix}font-sans-serif"}) !default;
+// Tên biến CSS được nội suy hoàn toàn
+$font-family-code: var(#{"--#{$variable-prefix}font-monospace"}) !default;
 
 // $font-size-root effects the value of `rem`, which is used for as well font sizes, paddings and margins
 // $font-size-base effects the font size of the body text
