@@ -35,7 +35,7 @@ public class TripController extends HttpServlet {
     loadReferenceData(request);
     List<Trip> trips = tripDAO.findAll();
     request.setAttribute("trips", trips);
-    request.getRequestDispatcher("/WEB-INF/admin/trips-manager/trip-list.jsp").forward(request, response);
+    request.getRequestDispatcher("/WEB-INF/admin/trip-list.jsp").forward(request, response);
     }
 
     @Override

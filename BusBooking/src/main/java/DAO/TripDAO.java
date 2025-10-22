@@ -38,7 +38,7 @@ public class TripDAO {
             + "INNER JOIN [USER] u ON t.OperatorID = u.UserID";
 
     public List<Trip> findAll() {
-        String sql = BASE_SELECT + " ORDER BY t.DepartureTime DESC";
+        String sql = BASE_SELECT + " ORDER BY t.DepartureTime ASC";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
