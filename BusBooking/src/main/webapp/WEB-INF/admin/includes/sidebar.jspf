@@ -89,6 +89,12 @@
                 <div data-i18n="Trips">Chuyến đi</div>
             </a>
         </li>
+            <li class="menu-item <%= "customers".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
+                <a href="<%= request.getContextPath() %>/admin/customers" class="menu-link">
+                    <i class="menu-icon tf-icons bx bx-user"></i>
+                    <div data-i18n="Customers">Khách hàng</div>
+                </a>
+            </li>
         <li class="menu-item <%= "routes".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/admin/routes" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-map"></i>

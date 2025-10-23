@@ -43,6 +43,7 @@
     }
 
     request.setAttribute("activeMenu", "trips");
+    request.setAttribute("navbarSearchPlaceholder", "Tìm kiếm chuyến đi...");
 %>
 <!DOCTYPE html>
 <html
@@ -93,54 +94,7 @@
         <!-- Layout container -->
         <div class="layout-page">
             <!-- Navbar -->
-            <nav
-                class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
-                id="layout-navbar"
-            >
-                <div class="layout-menu-toggle navbar-nav align-items-xl-center me-3 me-xl-0 d-xl-none">
-                    <a class="nav-item nav-link px-0 me-xl-4" href="javascript:void(0)">
-                        <i class="bx bx-menu bx-sm"></i>
-                    </a>
-                </div>
-
-                <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-                    <div class="navbar-nav align-items-center">
-                        <div class="nav-item d-flex align-items-center">
-                            <i class="bx bx-search fs-4 lh-0"></i>
-                            <input
-                                type="text"
-                                class="form-control border-0 shadow-none"
-                                placeholder="Tìm kiếm..."
-                                aria-label="Tìm kiếm..."
-                            />
-                        </div>
-                    </div>
-
-                    <ul class="navbar-nav flex-row align-items-center ms-auto">
-                        <li class="nav-item navbar-dropdown dropdown-user dropdown">
-                            <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
-                                <div class="avatar avatar-online">
-                                    <img src="<%= imgPath %>/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
-                                </div>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <span class="dropdown-item-text fw-semibold">Quản trị viên</span>
-                                </li>
-                                <li>
-                                    <div class="dropdown-divider"></div>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="<%= contextPath %>/logout">
-                                        <i class="bx bx-power-off me-2"></i>
-                                        <span class="align-middle">Đăng xuất</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            <%@ include file="includes/navbar.jspf" %>
             <!-- / Navbar -->
 
             <!-- Content wrapper -->
@@ -192,6 +146,7 @@
                                     </tr>
                                 <% } else { %>
                                     <% for (Trip trip : trips) {
+                                           String viewId = "viewTripModal" + trip.getTripId();
                                            String modalId = "editTripModal" + trip.getTripId();
                                            String deleteId = "deleteTripModal" + trip.getTripId();
                                     %>
@@ -231,12 +186,12 @@
                                                 <span class="badge bg-label-info"><%= trip.getTripStatus() %></span>
                                             </td>
                                             <td class="text-end">
-                                                <button type="button" class="btn btn-sm btn-icon btn-primary" data-bs-toggle="modal" data-bs-target="#<%= modalId %>">
-                                                    <i class="bx bx-edit"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-icon btn-danger" data-bs-toggle="modal" data-bs-target="#<%= deleteId %>">
-                                                    <i class="bx bx-trash"></i>
-                                                </button>
+                                                    <button type="button" class="btn btn-sm btn-icon btn-info text-white" data-bs-toggle="modal" data-bs-target="#<%= viewId %>">
+                                                        <i class="bx bx-show"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-icon btn-danger" data-bs-toggle="modal" data-bs-target="#<%= deleteId %>">
+                                                        <i class="bx bx-trash"></i>
+                                                    </button>
                                             </td>
                                         </tr>
                                     <% } %>
@@ -247,9 +202,107 @@
                     </div>
                     <% if (!trips.isEmpty()) {
                            for (Trip trip : trips) {
+                               String viewId = "viewTripModal" + trip.getTripId();
                                String modalId = "editTripModal" + trip.getTripId();
                                String deleteId = "deleteTripModal" + trip.getTripId();
+                               java.time.Duration tripDuration = (trip.getDepartureTime() != null && trip.getArrivalTime() != null)
+                                       ? java.time.Duration.between(trip.getDepartureTime(), trip.getArrivalTime())
+                                       : null;
+                               long totalDurationMinutes = tripDuration != null ? tripDuration.toMinutes() : -1;
+                               long durationHours = totalDurationMinutes >= 0 ? totalDurationMinutes / 60 : -1;
+                               long durationMinutes = totalDurationMinutes >= 0 ? totalDurationMinutes % 60 : -1;
                     %>
+                    <div class="modal fade" id="<%= viewId %>" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Chi tiết chuyến đi #<%= trip.getTripId() %></h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <small class="text-muted text-uppercase">Tuyến đường</small>
+                                            <p class="mb-1 fw-semibold">
+                                                <% if (trip.getRoute() != null) { %>
+                                                    <%= trip.getRoute().getOrigin() %> &rarr; <%= trip.getRoute().getDestination() %>
+                                                <% } else { %>
+                                                    <span class="text-muted">Chưa cập nhật</span>
+                                                <% } %>
+                                            </p>
+                                            <% if (trip.getRoute() != null && trip.getRoute().getDistance() != null) { %>
+                                                <small class="text-secondary">Khoảng cách: <%= trip.getRoute().getDistance() %> km</small>
+                                            <% } %>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted text-uppercase d-block">Giờ khởi hành</small>
+                                            <span class="fw-semibold">
+                                                <%= trip.getDepartureTime() != null ? trip.getDepartureTime().format(tableFormatter) : "Chưa cập nhật" %>
+                                            </span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted text-uppercase d-block">Giờ đến</small>
+                                            <span class="fw-semibold">
+                                                <%= trip.getArrivalTime() != null ? trip.getArrivalTime().format(tableFormatter) : "Chưa cập nhật" %>
+                                            </span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted text-uppercase d-block">Thời lượng</small>
+                                            <span class="fw-semibold">
+                                                <%= totalDurationMinutes >= 0 ? (durationHours + " giờ " + durationMinutes + " phút") : "Chưa cập nhật" %>
+                                            </span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted text-uppercase d-block">Giá vé</small>
+                                            <span class="fw-semibold text-warning"><%= trip.getPrice() != null ? trip.getPrice().toPlainString() : "0" %> VND</span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted text-uppercase d-block">Trạng thái</small>
+                                            <span class="badge bg-label-primary"><%= trip.getTripStatus() %></span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="border rounded-3 p-3 h-100">
+                                                <small class="text-muted text-uppercase d-block mb-2">Phương tiện</small>
+                                                <% if (trip.getVehicle() != null) { %>
+                                                    <p class="mb-1 fw-semibold">Biển số: <%= trip.getVehicle().getLicensePlate() %></p>
+                                                    <% if (trip.getVehicle().getModel() != null) { %>
+                                                        <p class="mb-1 text-secondary">Dòng xe: <%= trip.getVehicle().getModel() %></p>
+                                                    <% } %>
+                                                    <p class="mb-1 text-secondary">Số ghế: <%= trip.getVehicle().getCapacity() != null ? trip.getVehicle().getCapacity() : "Chưa rõ" %></p>
+                                                    <% if (trip.getVehicle().getVehicleStatus() != null) { %>
+                                                        <span class="badge bg-label-success"><%= trip.getVehicle().getVehicleStatus() %></span>
+                                                    <% } %>
+                                                <% } else { %>
+                                                    <span class="text-muted">Chưa cập nhật</span>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="border rounded-3 p-3 h-100">
+                                                <small class="text-muted text-uppercase d-block mb-2">Nhà xe / Điều hành</small>
+                                                <% if (trip.getOperator() != null) { %>
+                                                    <p class="mb-1 fw-semibold"><%= trip.getOperator().getFullName() %></p>
+                                                    <% if (trip.getOperator().getEmployeeCode() != null) { %>
+                                                        <p class="mb-1 text-secondary">Mã nhân viên: <%= trip.getOperator().getEmployeeCode() %></p>
+                                                    <% } %>
+                                                    <p class="mb-1 text-secondary">Email: <%= trip.getOperator().getEmail() %></p>
+                                                    <p class="mb-0 text-secondary">Điện thoại: <%= trip.getOperator().getPhoneNumber() %></p>
+                                                <% } else { %>
+                                                    <span class="text-muted">Chưa cập nhật</span>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#<%= modalId %>">
+                                        <i class="bx bx-edit me-1"></i> Chỉnh sửa chuyến đi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="modal fade" id="<%= modalId %>" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content">
