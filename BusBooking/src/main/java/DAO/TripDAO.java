@@ -273,6 +273,46 @@ public class TripDAO {
         return trip;
     }
 
+    /**
+     * Loads upcoming trips assigned to a specific operator, ordered by departure time.
+     * Only trips with departure time after the provided threshold (default now - 1 day) are returned.
+     *
+     * @param operatorId the operator (user) identifier
+     * @param maxResults maximum number of trips to return, pass a value <= 0 for no limit
+     * @return list of upcoming trips for the operator
+     */
+    public List<Trip> findUpcomingTripsForOperator(int operatorId, int maxResults) {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(1);
+        String sql = BASE_SELECT
+                + " WHERE t.OperatorID = ? AND t.DepartureTime >= ?"
+                + " ORDER BY t.DepartureTime ASC";
+
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading trips for operator {0}", operatorId);
+                return Collections.emptyList();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                ps.setTimestamp(2, Timestamp.valueOf(threshold));
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<Trip> trips = new ArrayList<>();
+                    while (rs.next()) {
+                        trips.add(mapTrip(rs));
+                        if (maxResults > 0 && trips.size() >= maxResults) {
+                            break;
+                        }
+                    }
+                    return trips;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to load upcoming trips for operator " + operatorId, ex);
+            return Collections.emptyList();
+        }
+    }
+
     private void setTimestamp(PreparedStatement ps, int index, LocalDateTime value) throws SQLException {
         if (value != null) {
             ps.setTimestamp(index, Timestamp.valueOf(value));

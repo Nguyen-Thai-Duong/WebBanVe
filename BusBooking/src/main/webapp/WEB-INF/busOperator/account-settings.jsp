@@ -1,0 +1,212 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="model.User" %>
+<%
+    String contextPath = request.getContextPath();
+    String assetBase = contextPath + "/assets/sneat-1.0.0/assets";
+    String vendorPath = assetBase + "/vendor";
+    String cssPath = assetBase + "/css";
+    String jsPath = assetBase + "/js";
+    String imgPath = assetBase + "/img";
+
+    request.setAttribute("activeMenu", "account-settings");
+    request.setAttribute("navbarSearchPlaceholder", "Tìm kiếm...");
+    request.setAttribute("navbarHideSearch", Boolean.TRUE);
+
+    User currentUser = (User) (session != null ? session.getAttribute("currentUser") : null);
+    String fullName = currentUser != null && currentUser.getFullName() != null ? currentUser.getFullName() : "";
+    String firstName = "";
+    String lastName = "";
+    if (!fullName.isBlank()) {
+        String trimmed = fullName.trim();
+        String[] parts = trimmed.split("\\s+");
+        if (parts.length > 1) {
+            lastName = parts[parts.length - 1];
+            firstName = trimmed.substring(0, trimmed.length() - lastName.length()).trim();
+        } else {
+            firstName = trimmed;
+            lastName = "";
+        }
+    }
+    if (firstName.isBlank()) {
+        firstName = fullName;
+    }
+    String email = currentUser != null && currentUser.getEmail() != null ? currentUser.getEmail() : "";
+    String phone = currentUser != null && currentUser.getPhoneNumber() != null ? currentUser.getPhoneNumber() : "";
+    String address = currentUser != null && currentUser.getAddress() != null ? currentUser.getAddress() : "";
+    String employeeCode = currentUser != null && currentUser.getEmployeeCode() != null ? currentUser.getEmployeeCode() : "";
+%>
+<!DOCTYPE html>
+<html lang="vi" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default"
+      data-assets-path="<%= assetBase %>/" data-template="vertical-menu-template-free">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhà xe - Cài đặt tài khoản</title>
+
+    <link rel="icon" type="image/x-icon" href="<%= imgPath %>/favicon/favicon.ico" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="<%= vendorPath %>/fonts/boxicons.css" />
+    <link rel="stylesheet" href="<%= vendorPath %>/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="<%= vendorPath %>/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="<%= cssPath %>/demo.css" />
+    <link rel="stylesheet" href="<%= vendorPath %>/libs/perfect-scrollbar/perfect-scrollbar.css" />
+
+    <script src="<%= vendorPath %>/js/helpers.js"></script>
+    <script src="<%= jsPath %>/config.js"></script>
+</head>
+<body>
+<div class="layout-wrapper layout-content-navbar">
+    <div class="layout-container">
+        <%@ include file="includes/sidebar.jspf" %>
+
+        <div class="layout-page">
+            <%@ include file="includes/navbar.jspf" %>
+
+            <div class="content-wrapper">
+                <div class="container-xxl flex-grow-1 container-p-y">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                        <div>
+                            <h4 class="fw-bold mb-1">Cài đặt tài khoản</h4>
+                            <span class="text-muted">Quản lý thông tin nhà xe và người phụ trách.</span>
+                        </div>
+                        <% if (!employeeCode.isBlank()) { %>
+                            <span class="badge bg-label-success fs-6">Mã nhân sự: <strong><%= employeeCode %></strong></span>
+                        <% } %>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card mb-4">
+                                <h5 class="card-header">Chi tiết hồ sơ</h5>
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start align-items-sm-center gap-4">
+                                        <img src="<%= imgPath %>/avatars/1.png" alt="user-avatar"
+                                             class="d-block rounded" height="100" width="100" id="uploadedAvatar" />
+                                        <div class="button-wrapper">
+                                            <label for="upload" class="btn btn-primary me-2 mb-4" tabindex="0">
+                                                <span class="d-none d-sm-block">Tải ảnh mới</span>
+                                                <i class="bx bx-upload d-block d-sm-none"></i>
+                                                <input type="file" id="upload" class="account-file-input" hidden accept="image/png, image/jpeg" />
+                                            </label>
+                                            <button type="button" class="btn btn-outline-secondary account-image-reset mb-4">
+                                                <i class="bx bx-reset d-block d-sm-none"></i>
+                                                <span class="d-none d-sm-block">Đặt lại</span>
+                                            </button>
+                                            <p class="text-muted mb-0">Cho phép định dạng JPG, GIF hoặc PNG. Tối đa 800KB.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr class="my-0" />
+                                <div class="card-body">
+                                    <form id="operatorAccountSettingsForm" method="post" action="javascript:void(0);">
+                                        <div class="row">
+                                            <div class="mb-3 col-md-6">
+                                                <label for="firstName" class="form-label">Họ</label>
+                                                <input class="form-control" type="text" id="firstName" name="firstName" value="<%= firstName %>" />
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="lastName" class="form-label">Tên</label>
+                                                <input class="form-control" type="text" id="lastName" name="lastName" value="<%= lastName %>" />
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="email" class="form-label">Email</label>
+                                                <input class="form-control" type="email" id="email" name="email" value="<%= email %>" />
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="organization" class="form-label">Đơn vị phụ trách</label>
+                                                <input type="text" class="form-control" id="organization" name="organization" value="Đội vận hành" />
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label class="form-label" for="phoneNumber">Điện thoại</label>
+                                                <div class="input-group input-group-merge">
+                                                    <span class="input-group-text">VN (+84)</span>
+                                                    <input type="text" id="phoneNumber" name="phoneNumber" class="form-control" placeholder="0900 000 000" value="<%= phone %>" />
+                                                </div>
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="address" class="form-label">Địa chỉ</label>
+                                                <input type="text" class="form-control" id="address" name="address" placeholder="Nhập địa chỉ cơ sở" value="<%= address %>" />
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="state" class="form-label">Tỉnh/Thành phố</label>
+                                                <input class="form-control" type="text" id="state" name="state" placeholder="TP. Hồ Chí Minh" />
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="zipCode" class="form-label">Mã bưu chính</label>
+                                                <input type="text" class="form-control" id="zipCode" name="zipCode" placeholder="700000" maxlength="6" />
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label class="form-label" for="country">Quốc gia</label>
+                                                <select id="country" class="form-select">
+                                                    <option value="">Chọn quốc gia</option>
+                                                    <option value="Vietnam" selected>Việt Nam</option>
+                                                    <option value="Singapore">Singapore</option>
+                                                    <option value="Thailand">Thái Lan</option>
+                                                    <option value="Malaysia">Malaysia</option>
+                                                    <option value="Philippines">Philippines</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="language" class="form-label">Ngôn ngữ</label>
+                                                <select id="language" class="form-select">
+                                                    <option value="">Chọn ngôn ngữ</option>
+                                                    <option value="vi" selected>Tiếng Việt</option>
+                                                    <option value="en">English</option>
+                                                    <option value="fr">Français</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="timeZones" class="form-label">Múi giờ</label>
+                                                <select id="timeZones" class="form-select">
+                                                    <option value="">Chọn múi giờ</option>
+                                                    <option value="UTC+7" selected>(GMT+7) Asia/Ho_Chi_Minh</option>
+                                                    <option value="UTC+8">(GMT+8) Asia/Singapore</option>
+                                                    <option value="UTC+9">(GMT+9) Asia/Tokyo</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3 col-md-6">
+                                                <label for="currency" class="form-label">Tiền tệ</label>
+                                                <select id="currency" class="form-select">
+                                                    <option value="">Chọn đơn vị</option>
+                                                    <option value="VND" selected>VND</option>
+                                                    <option value="USD">USD</option>
+                                                    <option value="EUR">EUR</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <button type="submit" class="btn btn-success text-white me-2">Lưu thay đổi</button>
+                                            <button type="reset" class="btn btn-outline-secondary">Hủy</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <h5 class="card-header">Bảo mật</h5>
+                                <div class="card-body">
+                                    <div class="alert alert-info mb-3" role="alert">
+                                        Để đổi mật khẩu, vui lòng sử dụng chức năng "Quên mật khẩu" tại trang đăng nhập.
+                                    </div>
+                                    <a class="btn btn-outline-primary" href="<%= contextPath %>/forgot-password">Yêu cầu đặt lại mật khẩu</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="<%= vendorPath %>/libs/popper/popper.js"></script>
+<script src="<%= vendorPath %>/js/bootstrap.js"></script>
+<script src="<%= vendorPath %>/js/menu.js"></script>
+<script src="<%= jsPath %>/main.js"></script>
+<script src="<%= jsPath %>/pages-account-settings-account.js"></script>
+</body>
+</html>

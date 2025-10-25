@@ -1,0 +1,33 @@
+<%@ page pageEncoding="UTF-8" %>
+<%
+    String activeMenu = (String) request.getAttribute("activeMenu");
+    if (activeMenu == null) {
+        activeMenu = "";
+    }
+    String operatorSidebarContextPath = request.getContextPath();
+%>
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+    <div class="app-brand demo">
+        <a href="<%= operatorSidebarContextPath %>/bus-operator/dashboard" class="app-brand-link">
+            <span class="app-brand-text demo menu-text fw-bold ms-2">FUTA Operator</span>
+        </a>
+        <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+            <i class="bx bx-chevron-left bx-sm align-middle"></i>
+        </a>
+    </div>
+    <div class="menu-inner-shadow"></div>
+    <ul class="menu-inner py-1">
+        <li class="menu-item <%= "dashboard".equals(activeMenu) ? "active" : "" %>">
+            <a href="<%= operatorSidebarContextPath %>/bus-operator/dashboard" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-home-alt"></i>
+                <div>Tổng quan</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "account-settings".equals(activeMenu) ? "active" : "" %>">
+            <a href="<%= operatorSidebarContextPath %>/bus-operator/account-settings" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-cog"></i>
+                <div>Tài khoản</div>
+            </a>
+        </li>
+    </ul>
+</aside>

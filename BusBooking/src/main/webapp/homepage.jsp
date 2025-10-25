@@ -1,4 +1,34 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="model.User" %>
+<%
+    User currentUser = (User) session.getAttribute("currentUser");
+    String contextPath = request.getContextPath();
+    String role = currentUser != null ? currentUser.getRole() : null;
+    String dashboardLink = null;
+    String profileLink = null;
+    String roleLabel = null;
+    if (role != null) {
+        switch (role) {
+            case "Admin":
+                dashboardLink = contextPath + "/admin/dashboard";
+                roleLabel = "Quản trị";
+                break;
+            case "Staff":
+                dashboardLink = contextPath + "/staff/dashboard";
+                roleLabel = "Nhân viên";
+                break;
+            case "BusOperator":
+                dashboardLink = contextPath + "/bus-operator/dashboard";
+                roleLabel = "Điều hành";
+                break;
+            case "Customer":
+            default:
+                roleLabel = "Khách hàng";
+                profileLink = contextPath + "/customer/profile";
+                break;
+        }
+    }
+%>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -24,14 +54,40 @@
                 <a href="#" class="text-white text-decoration-none">EN</a>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <a href="<%= request.getContextPath() %>/login-form.jsp" class="btn btn-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
-                    <i class="bx bx-user-circle fs-5 text-warning"></i>
-                    <span>Đăng nhập</span>
-                </a>
-                <a href="<%= request.getContextPath() %>/register-form.jsp" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
-                    <i class="bx bx-edit-alt fs-5"></i>
-                    <span>Đăng ký</span>
-                </a>
+                <% if (currentUser == null) { %>
+                    <a href="<%= contextPath %>/login-form.jsp" class="btn btn-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                        <i class="bx bx-user-circle fs-5 text-warning"></i>
+                        <span>Đăng nhập</span>
+                    </a>
+                    <a href="<%= contextPath %>/register-form.jsp" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                        <i class="bx bx-edit-alt fs-5"></i>
+                        <span>Đăng ký</span>
+                    </a>
+                <% } else { %>
+                    <% if (profileLink != null) { %>
+                        <a href="<%= profileLink %>" class="text-white text-decoration-none">
+                            <div class="d-flex align-items-center gap-2 text-white" style="cursor: pointer;">
+                                <i class="bx bx-user-circle fs-4 text-warning"></i>
+                                <div class="lh-sm">
+                                    <div class="fw-semibold">Xin chào, <%= currentUser.getFullName() %></div>
+                                    <small class="text-white-50"><%= roleLabel %><% if (currentUser.getEmployeeCode() != null && !currentUser.getEmployeeCode().isBlank()) { %> · Mã: <%= currentUser.getEmployeeCode() %><% } %></small>
+                                </div>
+                            </div>
+                        </a>
+                    <% } else { %>
+                        <div class="d-flex align-items-center gap-2 text-white">
+                            <i class="bx bx-user-circle fs-4 text-warning"></i>
+                            <div class="lh-sm">
+                                <div class="fw-semibold">Xin chào, <%= currentUser.getFullName() %></div>
+                                <small class="text-white-50"><%= roleLabel %><% if (currentUser.getEmployeeCode() != null && !currentUser.getEmployeeCode().isBlank()) { %> · Mã: <%= currentUser.getEmployeeCode() %><% } %></small>
+                            </div>
+                        </div>
+                    <% } %>
+                    <a href="<%= contextPath %>/logout" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                        <i class="bx bx-log-out fs-5"></i>
+                        <span>Đăng xuất</span>
+                    </a>
+                <% } %>
             </div>
         </div>
     </div>
@@ -59,6 +115,12 @@
         <div class="container hero-content">
             <h1>FUTA Bus Lines – Đặt vé trực tuyến dễ dàng, an tâm mỗi hành trình</h1>
             <p>Tận hưởng trải nghiệm đặt vé xe khách nhanh chóng với hàng nghìn tuyến xe mỗi ngày, hỗ trợ trung chuyển và nhiều ưu đãi hấp dẫn.</p>
+            <% if (currentUser != null) { %>
+                <div class="alert alert-warning d-inline-flex align-items-center gap-2 mt-3 shadow-sm" role="status">
+                    <i class="bx bx-smile fs-4 text-warning"></i>
+                    <span>Chào mừng trở lại, <strong><%= currentUser.getFullName() %></strong>!<% if ("Customer".equals(role)) { %> Sẵn sàng đặt chuyến tiếp theo của bạn chứ?<% } else if (dashboardLink != null) { %> Truy cập bảng điều khiển để quản lý vận hành nhanh chóng.<% } %></span>
+                </div>
+            <% } %>
         </div>
     </section>
 </header>
@@ -90,10 +152,15 @@
                         <option>4 hành khách</option>
                     </select>
                 </div>
-                <div>
+                <div class="d-flex flex-column flex-lg-row gap-3">
                     <button class="btn btn-lg btn-warning text-white px-4" type="button">
-                        <strong>Tìm chuyến xe</strong>
+                        <strong><%= currentUser == null || "Customer".equals(role) ? "Tìm chuyến xe" : "Tìm chuyến" %></strong>
                     </button>
+                    <% if (currentUser != null && dashboardLink != null && !"Customer".equals(role)) { %>
+                        <a class="btn btn-lg btn-outline-warning text-white px-4" href="<%= dashboardLink %>">
+                            <strong>Vào bảng điều khiển</strong>
+                        </a>
+                    <% } %>
                 </div>
             </div>
             <div class="divider"></div>

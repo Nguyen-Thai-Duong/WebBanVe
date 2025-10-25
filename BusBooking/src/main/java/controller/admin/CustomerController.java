@@ -8,13 +8,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import model.User;
+import util.PasswordUtils;
 
 /**
  * Controller for managing customer accounts in the admin module.
@@ -120,7 +118,12 @@ public class CustomerController extends HttpServlet {
 
         String password = request.getParameter("password");
         if (password != null && !password.isBlank()) {
-            customer.setPasswordHash(hashPassword(password));
+            try {
+                customer.setPasswordHash(PasswordUtils.hashPassword(password));
+            } catch (RuntimeException ex) {
+                LOGGER.log(Level.SEVERE, "Không thể mã hóa mật khẩu", ex);
+                customer.setPasswordHash(null);
+            }
         } else if (requirePassword) {
             customer.setPasswordHash(null);
         }
@@ -144,21 +147,6 @@ public class CustomerController extends HttpServlet {
 
     private String defaultIfBlank(String value, String defaultValue) {
         return (value == null || value.isBlank()) ? defaultValue : value.trim();
-    }
-
-    private String hashPassword(String rawPassword) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hash) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException ex) {
-            LOGGER.log(Level.SEVERE, "SHA-256 algorithm not available", ex);
-            return rawPassword; // fallback to plain text (not recommended)
-        }
     }
 
     private void setFlash(HttpSession session, String type, String message) {

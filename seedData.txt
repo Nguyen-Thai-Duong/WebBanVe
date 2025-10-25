@@ -1,0 +1,140 @@
+SET NOCOUNT ON;
+
+-- Step 1: Clear existing data (child tables first)
+DELETE FROM TICKET;
+DELETE FROM PAYMENT;
+DELETE FROM SUPPORT_TICKET;
+DELETE FROM TRIP_REVIEW;
+DELETE FROM BOOKING;
+DELETE FROM TRIP;
+DELETE FROM VEHICLE;
+DELETE FROM ROUTE;
+DELETE FROM [USER];
+
+-- Step 2: Reset identity sequences
+DBCC CHECKIDENT ('TICKET', RESEED, 0);
+DBCC CHECKIDENT ('PAYMENT', RESEED, 0);
+DBCC CHECKIDENT ('SUPPORT_TICKET', RESEED, 0);
+DBCC CHECKIDENT ('TRIP_REVIEW', RESEED, 0);
+DBCC CHECKIDENT ('BOOKING', RESEED, 0);
+DBCC CHECKIDENT ('TRIP', RESEED, 0);
+DBCC CHECKIDENT ('VEHICLE', RESEED, 0);
+DBCC CHECKIDENT ('ROUTE', RESEED, 0);
+DBCC CHECKIDENT ('[USER]', RESEED, 0);
+
+-- Step 3: Seed base users (EmployeeCode is computed automatically)
+INSERT INTO [USER] (FullName, Email, PasswordHash, PhoneNumber, [Role], Address)
+VALUES
+	(N'Trần Văn An', 'an.tran@bus.com', '201bce2458f00a54130c695ca8d1658319b32206d495adf175847b57bd4a4151', '0901234567', 'Admin', N'123 Đường ABC, Hà Nội'),
+	(N'Lê Thị Bình', 'binh.le@bus.com', '201bce2458f00a54130c695ca8d1658319b32206d495adf175847b57bd4a4151', '0912345678', 'Staff', N'456 Phố XYZ, Đà Nẵng'),
+	(N'Phạm Văn Cường', 'cuong.pham@bus.com', '201bce2458f00a54130c695ca8d1658319b32206d495adf175847b57bd4a4151', '0923456789', 'BusOperator', N'789 Đại Lộ MNP, TP.HCM'),
+	(N'Nguyễn Thu Duyên', 'duyen.nguyen@email.com', '201bce2458f00a54130c695ca8d1658319b32206d495adf175847b57bd4a4151', '0934567890', 'Customer', N'321 Hẻm QRS, Cần Thơ'),
+	(N'Vũ Đình Hùng', 'hung.vu@email.com', '201bce2458f00a54130c695ca8d1658319b32206d495adf175847b57bd4a4151', '0945678901', 'Customer', N'654 Ngõ TUV, Hải Phòng');
+
+DECLARE @AdminId INT = (SELECT UserID FROM [USER] WHERE Email = 'an.tran@bus.com');
+DECLARE @StaffId INT = (SELECT UserID FROM [USER] WHERE Email = 'binh.le@bus.com');
+DECLARE @BusOpId INT = (SELECT UserID FROM [USER] WHERE Email = 'cuong.pham@bus.com');
+DECLARE @CustomerDuyenId INT = (SELECT UserID FROM [USER] WHERE Email = 'duyen.nguyen@email.com');
+DECLARE @CustomerHungId INT = (SELECT UserID FROM [USER] WHERE Email = 'hung.vu@email.com');
+
+DECLARE @AdminCode VARCHAR(13) = (SELECT EmployeeCode FROM [USER] WHERE UserID = @AdminId);
+DECLARE @StaffCode VARCHAR(13) = (SELECT EmployeeCode FROM [USER] WHERE UserID = @StaffId);
+DECLARE @BusOpCode VARCHAR(13) = (SELECT EmployeeCode FROM [USER] WHERE UserID = @BusOpId);
+
+-- Step 4: Seed vehicles using generated employee codes
+INSERT INTO VEHICLE (EmployeeCode, LicensePlate, Model, Capacity, MaintenanceIntervalDays, LastMaintenanceDate, VehicleStatus)
+VALUES
+	(@BusOpCode, N'51F-123.45', N'Thaco Universe 45', 45, 90, '2025-09-01', N'Available'),
+	(@BusOpCode, N'50A-678.90', N'Hyundai Aero Space', 40, 90, '2025-08-15', N'Available'),
+	(@StaffCode, N'43B-111.22', N'Ford Transit', 16, 60, '2025-10-01', N'InMaintenance'),
+	(@BusOpCode, N'51C-333.44', N'Thaco Bluesky 30', 30, 90, '2025-09-20', N'Available'),
+	(@AdminCode, N'51D-555.66', N'Limousine VIP 9', 9, 30, '2025-10-10', N'Available');
+
+DECLARE @VehicleThaco45 INT = (SELECT VehicleID FROM VEHICLE WHERE LicensePlate = N'51F-123.45');
+DECLARE @VehicleHyundai INT = (SELECT VehicleID FROM VEHICLE WHERE LicensePlate = N'50A-678.90');
+DECLARE @VehicleFord INT = (SELECT VehicleID FROM VEHICLE WHERE LicensePlate = N'43B-111.22');
+DECLARE @VehicleBluesky INT = (SELECT VehicleID FROM VEHICLE WHERE LicensePlate = N'51C-333.44');
+DECLARE @VehicleLimousine INT = (SELECT VehicleID FROM VEHICLE WHERE LicensePlate = N'51D-555.66');
+
+-- Step 5: Seed routes
+INSERT INTO ROUTE (Origin, Destination, Distance)
+VALUES
+	(N'Hà Nội', N'TP. Hồ Chí Minh', 1700.50),
+	(N'Đà Nẵng', N'Huế', 100.00),
+	(N'TP. Hồ Chí Minh', N'Cần Thơ', 170.80),
+	(N'Hà Nội', N'Hải Phòng', 105.20),
+	(N'Huế', N'Quảng Bình', 160.00);
+
+DECLARE @RouteHanoiHCM INT = (SELECT RouteID FROM ROUTE WHERE Origin = N'Hà Nội' AND Destination = N'TP. Hồ Chí Minh');
+DECLARE @RouteDanangHue INT = (SELECT RouteID FROM ROUTE WHERE Origin = N'Đà Nẵng' AND Destination = N'Huế');
+DECLARE @RouteHCMCanTho INT = (SELECT RouteID FROM ROUTE WHERE Origin = N'TP. Hồ Chí Minh' AND Destination = N'Cần Thơ');
+DECLARE @RouteHanoiHaiphong INT = (SELECT RouteID FROM ROUTE WHERE Origin = N'Hà Nội' AND Destination = N'Hải Phòng');
+DECLARE @RouteHueQuangBinh INT = (SELECT RouteID FROM ROUTE WHERE Origin = N'Huế' AND Destination = N'Quảng Bình');
+
+-- Step 6: Seed trips referencing real IDs
+INSERT INTO TRIP (RouteID, DepartureTime, ArrivalTime, Price, VehicleID, OperatorID, TripStatus)
+VALUES
+	(@RouteHanoiHCM, '2025-11-01T06:00:00', '2025-11-02T04:00:00', 950000.00, @VehicleThaco45, @BusOpId, N'Scheduled'),
+	(@RouteDanangHue, '2025-11-05T08:30:00', '2025-11-05T10:30:00', 100000.00, @VehicleHyundai, @BusOpId, N'Departed'),
+	(@RouteHCMCanTho, '2025-11-10T18:00:00', '2025-11-10T21:30:00', 180000.00, @VehicleBluesky, @BusOpId, N'Scheduled'),
+	(@RouteHanoiHaiphong, '2025-11-15T14:00:00', '2025-11-15T16:30:00', 120000.00, @VehicleLimousine, @BusOpId, N'Cancelled'),
+	(@RouteHueQuangBinh, '2025-11-20T22:00:00', '2025-11-21T02:00:00', 150000.00, @VehicleHyundai, @BusOpId, N'Scheduled');
+
+DECLARE @TripHanoiHCM INT = (SELECT TripID FROM TRIP WHERE RouteID = @RouteHanoiHCM AND DepartureTime = '2025-11-01T06:00:00');
+DECLARE @TripDanangHue INT = (SELECT TripID FROM TRIP WHERE RouteID = @RouteDanangHue AND DepartureTime = '2025-11-05T08:30:00');
+DECLARE @TripHCMCanTho INT = (SELECT TripID FROM TRIP WHERE RouteID = @RouteHCMCanTho AND DepartureTime = '2025-11-10T18:00:00');
+DECLARE @TripHanoiHaiphong INT = (SELECT TripID FROM TRIP WHERE RouteID = @RouteHanoiHaiphong AND DepartureTime = '2025-11-15T14:00:00');
+DECLARE @TripHueQuangBinh INT = (SELECT TripID FROM TRIP WHERE RouteID = @RouteHueQuangBinh AND DepartureTime = '2025-11-20T22:00:00');
+
+-- Step 7: Seed bookings
+INSERT INTO BOOKING (TripID, UserID, GuestPhoneNumber, GuestEmail, BookingStatus, SeatNumber, SeatStatus, TTL_Expiry)
+VALUES
+	(@TripHanoiHCM, @CustomerDuyenId, NULL, NULL, N'Confirmed', N'A1', N'Booked', NULL),
+	(@TripDanangHue, @CustomerHungId, NULL, NULL, N'Confirmed', N'B2', N'Booked', NULL),
+	(@TripHCMCanTho, NULL, '0987654321', 'guest1@email.com', N'Pending', N'C3', N'Reserved', DATEADD(HOUR, 2, GETDATE())),
+	(@TripHanoiHaiphong, @CustomerDuyenId, NULL, NULL, N'Cancelled', N'D4', N'Cancelled', NULL),
+	(@TripHueQuangBinh, NULL, '0976543210', 'guest2@email.com', N'Confirmed', N'A5', N'Booked', NULL);
+
+DECLARE @Booking1 INT = (SELECT BookingID FROM BOOKING WHERE TripID = @TripHanoiHCM AND SeatNumber = N'A1');
+DECLARE @Booking2 INT = (SELECT BookingID FROM BOOKING WHERE TripID = @TripDanangHue AND SeatNumber = N'B2');
+DECLARE @Booking3 INT = (SELECT BookingID FROM BOOKING WHERE TripID = @TripHCMCanTho AND SeatNumber = N'C3');
+DECLARE @Booking4 INT = (SELECT BookingID FROM BOOKING WHERE TripID = @TripHanoiHaiphong AND SeatNumber = N'D4');
+DECLARE @Booking5 INT = (SELECT BookingID FROM BOOKING WHERE TripID = @TripHueQuangBinh AND SeatNumber = N'A5');
+
+-- Step 8: Seed payments
+INSERT INTO PAYMENT (BookingID, Amount, [Method], [Type], TransactionRef)
+VALUES
+	(@Booking1, 950000.00, N'Bank Transfer', N'Payment', 'TXN0001'),
+	(@Booking2, 100000.00, N'Cash', N'Payment', 'TXN0002'),
+	(@Booking3, 180000.00, N'Credit Card', N'Payment', 'TXN0003'),
+	(@Booking4, 950000.00, N'Bank Transfer', N'Refund', 'TXN0004'),
+	(@Booking5, 150000.00, N'Momo', N'Payment', 'TXN0005');
+
+-- Step 9: Seed tickets
+INSERT INTO TICKET (BookingID, TicketNumber, TicketStatus, CheckedInBy, CheckedInAt)
+VALUES
+	(@Booking1, 'TKT-000001', N'Issued', NULL, NULL),
+	(@Booking2, 'TKT-000002', N'Used', @StaffId, '2025-11-05T08:00:00'),
+	(@Booking3, 'TKT-000003', N'Issued', NULL, NULL),
+	(@Booking4, 'TKT-000004', N'Void', NULL, NULL),
+	(@Booking5, 'TKT-000005', N'Issued', NULL, NULL);
+
+-- Step 10: Seed trip reviews
+INSERT INTO TRIP_REVIEW (TripID, CustomerID, Rating, Comment)
+VALUES
+	(@TripDanangHue, @CustomerHungId, 5, N'Chuyến đi rất tuyệt vời, xe sạch sẽ.'),
+	(@TripHanoiHCM, @CustomerDuyenId, 4, N'Tài xế thân thiện, xe đi êm nhưng hơi trễ 10 phút.'),
+	(@TripHCMCanTho, @CustomerDuyenId, 5, N'Đúng giờ, dịch vụ tốt.'),
+	(@TripDanangHue, @CustomerDuyenId, 3, N'Khá ổn, nhưng máy lạnh hơi lạnh.'),
+	(@TripHueQuangBinh, @CustomerHungId, 5, N'Tóm lại là OK, sẽ đặt tiếp.');
+
+-- Step 11: Seed support tickets
+INSERT INTO SUPPORT_TICKET (CustomerID, BookingID, StaffAssigned, Category, IssueDescription, ResolutionDetails, [Status], ClosedDate)
+VALUES
+	(@CustomerDuyenId, @Booking4, @StaffId, N'Hủy vé', N'Tôi muốn hủy vé chuyến HN-HP ngày 15/11.', N'Đã hủy vé và xử lý hoàn tiền.', N'Closed', '2025-10-25T10:00:00'),
+	(@CustomerHungId, @Booking2, @StaffId, N'Thay đổi chỗ', N'Tôi muốn đổi chỗ từ B2 sang B1.', N'Đã thay đổi chỗ thành công.', N'Closed', '2025-10-26T15:30:00'),
+	(NULL, @Booking3, NULL, N'Thanh toán', N'Không thanh toán được BookingID 3.', NULL, N'Open', NULL),
+	(@CustomerDuyenId, NULL, @StaffId, N'Khiếu nại', N'Tài xế xe 51F-123.45 có thái độ chưa tốt.', N'Đã ghi nhận và chuyển cho bộ phận quản lý nhà xe xử lý.', N'InProgress', NULL),
+	(@CustomerHungId, @Booking5, @StaffId, N'Hỗ trợ', N'Tôi cần xác nhận thông tin chuyến đi.', N'Đã gọi điện xác nhận thông tin chuyến đi.', N'Closed', '2025-10-28T09:00:00');
+
+SET NOCOUNT OFF;

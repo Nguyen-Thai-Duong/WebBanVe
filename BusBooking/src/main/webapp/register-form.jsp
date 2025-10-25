@@ -31,6 +31,15 @@
         <div class="authentication-inner">
             <div class="card shadow-sm">
                 <div class="card-body">
+                    <%
+                        String errorMessage = (String) request.getAttribute("errorMessage");
+                        String successMessage = (String) request.getAttribute("successMessage");
+                        String prefillFullName = (String) request.getAttribute("prefillFullName");
+                        String prefillPhone = (String) request.getAttribute("prefillPhone");
+                        String prefillEmail = (String) request.getAttribute("prefillEmail");
+                        Boolean prefillAgree = (Boolean) request.getAttribute("prefillAgree");
+                        boolean agreeChecked = prefillAgree != null && prefillAgree;
+                    %>
                     <div class="app-brand justify-content-center mb-4">
                         <a href="<%= request.getContextPath() %>/homepage.jsp" class="app-brand-link gap-2">
                             <span class="app-brand-logo demo">
@@ -43,21 +52,27 @@
                     <h4 class="mb-2 text-center">Khởi đầu hành trình cùng FUTA 🚀</h4>
                     <p class="mb-4 text-center text-secondary">Tạo tài khoản để quản lý đặt vé nhanh chóng và tiện lợi.</p>
 
+                    <% if (errorMessage != null) { %>
+                        <div class="alert alert-danger" role="alert"><%= errorMessage %></div>
+                    <% } else if (successMessage != null) { %>
+                        <div class="alert alert-success" role="alert"><%= successMessage %></div>
+                    <% } %>
+
                     <form id="registerForm" class="mb-3" action="<%= request.getContextPath() %>/register" method="post">
                         <div class="mb-3">
                             <label for="fullname" class="form-label">Họ và tên</label>
                             <input type="text" class="form-control" id="fullname" name="fullName"
-                                   placeholder="Nhập họ và tên" required>
+                                   placeholder="Nhập họ và tên" value="<%= prefillFullName != null ? prefillFullName : "" %>" required>
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label">Số điện thoại</label>
                             <input type="tel" class="form-control" id="phone" name="phone"
-                                   placeholder="Nhập số điện thoại" required>
+                                   placeholder="Nhập số điện thoại" value="<%= prefillPhone != null ? prefillPhone : "" %>" required>
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control" id="email" name="email"
-                                   placeholder="Nhập email của bạn" required>
+                                   placeholder="Nhập email của bạn" value="<%= prefillEmail != null ? prefillEmail : "" %>" required>
                         </div>
                         <div class="mb-3 form-password-toggle">
                             <label class="form-label" for="password">Mật khẩu</label>
@@ -77,7 +92,7 @@
                         </div>
                         <div class="mb-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="terms-conditions" name="agree" required>
+                                <input class="form-check-input" type="checkbox" id="terms-conditions" name="agree" <%= agreeChecked ? "checked" : "" %> required>
                                 <label class="form-check-label" for="terms-conditions">
                                     Tôi đồng ý với <a href="https://futabus.vn/dieu-khoan-su-dung" target="_blank" rel="noreferrer">Điều khoản sử dụng</a>
                                     và <a href="https://futabus.vn/chinh-sach-bao-mat" target="_blank" rel="noreferrer">Chính sách bảo mật</a>.

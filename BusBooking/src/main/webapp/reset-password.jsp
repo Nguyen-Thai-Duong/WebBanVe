@@ -6,8 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Đăng nhập | FUTA Bus Lines</title>
-    <meta name="description" content="Đăng nhập hệ thống quản trị và đặt vé FUTA Bus Lines.">
+    <title>Xác nhận mã & đặt lại mật khẩu | FUTA Bus Lines</title>
 
     <link rel="icon" type="image/png" href="https://cdn.futabus.vn/futa-busline-web-cms-prod/Logo_Futa_Moi_98dac5d84a/Logo_Futa_Moi_98dac5d84a.png">
 
@@ -28,7 +27,7 @@
 <body>
 <div class="container-xxl">
     <div class="authentication-wrapper authentication-basic container-p-y">
-        <div class="authentication-inner">
+        <div class="authentication-inner py-4">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <div class="app-brand justify-content-center mb-4">
@@ -40,48 +39,52 @@
                         </a>
                     </div>
 
-                    <h4 class="mb-2 text-center">Đăng nhập hệ thống 👋</h4>
-                    <p class="mb-4 text-center text-secondary">Vui lòng sử dụng tài khoản FUTA của bạn để tiếp tục.</p>
+                    <h4 class="mb-2 text-center">Xác nhận mã & đặt lại mật khẩu</h4>
+                    <p class="mb-4 text-center text-secondary">Nhập mã xác nhận vừa nhận qua email và đặt mật khẩu mới.</p>
 
-                    <% controller.auth.AuthController.applyResetSuccessFlash(request); %>
-                    <% String successMessage = (String) request.getAttribute("successMessage"); %>
-                    <% if (successMessage != null) { %>
-                        <div class="alert alert-success" role="alert"><%= successMessage %></div>
-                    <% } %>
                     <% String errorMessage = (String) request.getAttribute("errorMessage"); %>
                     <% if (errorMessage != null) { %>
                         <div class="alert alert-danger" role="alert"><%= errorMessage %></div>
                     <% } %>
+                    <% String successMessage = (String) request.getAttribute("successMessage"); %>
+                    <% if (successMessage != null) { %>
+                        <div class="alert alert-success" role="alert"><%= successMessage %></div>
+                    <% } %>
 
-                    <form id="formAuthentication" class="mb-3" action="<%= request.getContextPath() %>/login" method="post">
+                    <form id="formResetPassword" class="mb-3" action="<%= request.getContextPath() %>/reset-password" method="post">
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email hoặc Số điện thoại</label>
-                            <input type="text" class="form-control" id="email" name="identifier"
-                                   placeholder="Nhập email hoặc số điện thoại" value="<%= request.getAttribute("prefillIdentifier") != null ? request.getAttribute("prefillIdentifier") : "" %>" required>
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   value="<%= request.getParameter("email") != null ? request.getParameter("email") : "" %>"
+                                   placeholder="Nhập email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="otp" class="form-label">Mã xác nhận</label>
+                            <input type="text" class="form-control" id="otp" name="otp" maxlength="6" minlength="6"
+                                   placeholder="Nhập mã gồm 6 chữ số" required>
                         </div>
                         <div class="mb-3 form-password-toggle">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <label class="form-label" for="password">Mật khẩu</label>
-                                <a href="<%= request.getContextPath() %>/forgot-password" class="small">Quên mật khẩu?</a>
-                            </div>
+                            <label class="form-label" for="password">Mật khẩu mới</label>
                             <div class="input-group input-group-merge">
-                                <input type="password" id="password" class="form-control" name="password"
-                                       placeholder="••••••••" aria-describedby="password" required>
+                                <input type="password" id="password" class="form-control" name="password" placeholder="••••••••" required>
                                 <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <input type="hidden" name="remember" value="false">
+                        <div class="mb-3 form-password-toggle">
+                            <label class="form-label" for="confirmPassword">Xác nhận mật khẩu</label>
+                            <div class="input-group input-group-merge">
+                                <input type="password" id="confirmPassword" class="form-control" name="confirmPassword" placeholder="••••••••" required>
+                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                            </div>
                         </div>
-                        <button class="btn btn-warning d-grid w-100 text-white" type="submit">
-                            Đăng nhập
-                        </button>
+                        <button class="btn btn-primary d-grid w-100" type="submit">Đặt lại mật khẩu</button>
                     </form>
-
-                    <p class="text-center mb-0">
-                        <span>Chưa có tài khoản?</span>
-                        <a href="<%= request.getContextPath() %>/register-form.jsp">Đăng ký ngay</a>
-                    </p>
+                    <div class="text-center">
+                        <a href="<%= request.getContextPath() %>/forgot-password" class="d-flex align-items-center justify-content-center">
+                            <i class="bx bx-chevron-left bx-sm"></i>
+                            Quay lại nhận mã mới
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

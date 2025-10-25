@@ -2,7 +2,7 @@
 -- CREATE DATABASE BusBookingSystem1;
 -- GO
 
--- USE BusBookingSystem;
+-- USE BusBookingSystem1;
 -- GO
 
 -----------------------------------------------------------------------------------
@@ -10,19 +10,28 @@
 -----------------------------------------------------------------------------------
 
 CREATE TABLE [USER] (
-    UserID INT PRIMARY KEY IDENTITY(1,1),
-    -- Cột EmployeeCode phải là UNIQUE để có thể được tham chiếu làm khóa ngoại
-    EmployeeCode VARCHAR(10) UNIQUE, 
-    FullName NVARCHAR(100) NOT NULL,
-    Email NVARCHAR(100) UNIQUE NOT NULL, 
-    PasswordHash VARCHAR(255) NOT NULL,
-    PhoneNumber VARCHAR(20) NOT NULL,
-    [Role] NVARCHAR(50) NOT NULL CHECK ([Role] IN ('Admin', 'Staff', 'BusOperator', 'Customer')),
-    [Status] NVARCHAR(50) NOT NULL DEFAULT 'Active' CHECK ([Status] IN ('Active', 'Inactive', 'Blocked')),
-    Address NVARCHAR(255),
-    -- Các trường Audit (Tạo/Cập nhật)
-    CreatedAt DATETIME DEFAULT GETDATE(),
-    UpdatedAt DATETIME DEFAULT GETDATE()
+	UserID INT PRIMARY KEY IDENTITY(1,1),
+	FullName NVARCHAR(100) NOT NULL,
+	Email NVARCHAR(100) UNIQUE NOT NULL, 
+	PasswordHash VARCHAR(255) NOT NULL,
+	PhoneNumber VARCHAR(20) NOT NULL,
+	[Role] NVARCHAR(50) NOT NULL CHECK ([Role] IN ('Admin', 'Staff', 'BusOperator', 'Customer')),
+	[Status] NVARCHAR(50) NOT NULL DEFAULT 'Active' CHECK ([Status] IN ('Active', 'Inactive', 'Blocked')),
+	Address NVARCHAR(255),
+	-- Các trường Audit (Tạo/Cập nhật)
+	CreatedAt DATETIME DEFAULT GETDATE(),
+	UpdatedAt DATETIME DEFAULT GETDATE(),
+	-- EmployeeCode tự sinh dựa trên Role + UserID
+	EmployeeCode AS CAST(
+		CASE [Role]
+			WHEN 'Admin' THEN 'AD' + RIGHT('000' + CAST(UserID AS VARCHAR(10)), 3)
+			WHEN 'Staff' THEN 'ST' + RIGHT('000' + CAST(UserID AS VARCHAR(10)), 3)
+			WHEN 'BusOperator' THEN 'BO' + RIGHT('000' + CAST(UserID AS VARCHAR(10)), 3)
+			WHEN 'Customer' THEN 'CST' + (CASE WHEN UserID < 10 THEN '0' ELSE '' END) + CAST(UserID AS VARCHAR(10))
+			ELSE 'USR' + CAST(UserID AS VARCHAR(10))
+		END AS VARCHAR(13)
+	) PERSISTED,
+	CONSTRAINT UQ_USER_EmployeeCode UNIQUE (EmployeeCode)
 );
 
 ---
@@ -30,8 +39,8 @@ CREATE TABLE [USER] (
 CREATE TABLE VEHICLE (
     VehicleID INT PRIMARY KEY IDENTITY(1,1),
     
-    -- THAY ĐỔI: Sử dụng trực tiếp EmployeeCode
-    EmployeeCode VARCHAR(10) NOT NULL, -- Mã Nhân viên  (VD: BOxxxx)
+	-- THAY ĐỔI: Sử dụng trực tiếp EmployeeCode
+	EmployeeCode VARCHAR(13) NOT NULL, -- Mã Nhân viên (VD: BO003, CST12)
     
     LicensePlate NVARCHAR(50) UNIQUE NOT NULL,
     Model NVARCHAR(100),

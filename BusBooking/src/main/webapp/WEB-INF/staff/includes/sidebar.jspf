@@ -1,0 +1,51 @@
+<%@ page pageEncoding="UTF-8" %>
+<%
+    String activeMenu = (String) request.getAttribute("activeMenu");
+    if (activeMenu == null) {
+        activeMenu = "";
+    }
+    String sidebarContextPath = request.getContextPath();
+%>
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+    <div class="app-brand demo">
+        <a href="<%= sidebarContextPath %>/staff/dashboard" class="app-brand-link">
+            <span class="app-brand-text demo menu-text fw-bold ms-2">FUTA Staff</span>
+        </a>
+        <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+            <i class="bx bx-chevron-left bx-sm align-middle"></i>
+        </a>
+    </div>
+    <div class="menu-inner-shadow"></div>
+    <ul class="menu-inner py-1">
+        <li class="menu-item <%= "dashboard".equals(activeMenu) ? "active" : "" %>">
+            <a href="<%= sidebarContextPath %>/staff/dashboard" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-home-alt"></i>
+                <div>Tổng quan</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "tickets".equals(activeMenu) ? "active" : "" %>">
+            <a href="<%= sidebarContextPath %>/staff/tickets" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-receipt"></i>
+                <div>Quản lý vé</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "support".equals(activeMenu) ? "active" : "" %>">
+            <a href="<%= sidebarContextPath %>/staff/support" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-phone-call"></i>
+                <div>Hỗ trợ khách hàng</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "customers".equals(activeMenu) ? "active" : "" %>">
+            <a href="<%= sidebarContextPath %>/staff/customers" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user"></i>
+                <div>Khách hàng</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "account-settings".equals(activeMenu) ? "active" : "" %>">
+            <a href="<%= sidebarContextPath %>/staff/account-settings" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-cog"></i>
+                <div>Tài khoản</div>
+            </a>
+        </li>
+    </ul>
+</aside>
