@@ -4,8 +4,8 @@
 <%@ page import="java.util.Collections" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
 <%@ page import="java.time.LocalDateTime" %>
-<%@ page import="dto.TicketSummary" %>
-<%@ page import="dto.SupportTicketView" %>
+<%@ page import="dto.ticket.TicketSummary" %>
+<%@ page import="dto.support.SupportTicketView" %>
 <%
     Map<String, Number> metrics = (Map<String, Number>) request.getAttribute("metrics");
     long ticketsIssuedToday = metrics != null && metrics.get("ticketsIssuedToday") != null ? metrics.get("ticketsIssuedToday").longValue() : 0L;

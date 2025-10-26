@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Helper for managing JDBC interactions with the BusBooking SQL Server database.
@@ -14,6 +16,8 @@ public class DBContext implements AutoCloseable {
     private static final String DEFAULT_URL = "jdbc:sqlserver://localhost:1433;databaseName=BusBookingSystem1;encrypt=false";
     private static final String DEFAULT_USER = "sa";
     private static final String DEFAULT_PASSWORD = "123";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DBContext.class);
 
     private Connection connection;
 
@@ -26,11 +30,9 @@ public class DBContext implements AutoCloseable {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             connection = DriverManager.getConnection(url, user, password);
         } catch (ClassNotFoundException e) {
-            System.err.println("SQL Server JDBC driver not found: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("SQL Server JDBC driver not found.", e);
         } catch (SQLException e) {
-            System.err.println("Failed to establish database connection: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Failed to establish database connection.", e);
         }
     }
 
@@ -43,7 +45,7 @@ public class DBContext implements AutoCloseable {
             try {
                 connection.close();
             } catch (SQLException e) {
-                System.err.println("Error closing connection: " + e.getMessage());
+                LOGGER.warn("Error closing database connection.", e);
             }
         }
     }

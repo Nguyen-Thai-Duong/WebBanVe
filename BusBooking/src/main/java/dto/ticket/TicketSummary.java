@@ -1,11 +1,17 @@
-package dto;
+package dto.ticket;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * Lightweight projection for showing ticket information in staff consoles.
  */
 public class TicketSummary {
+
+    private static final DateTimeFormatter DEPARTURE_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm, dd/MM/yyyy").withLocale(new Locale("vi", "VN"));
+    private static final String DEFAULT_SUPPORT_EMAIL = "support@futa.vn";
 
     private Integer ticketId;
     private Integer bookingId;
@@ -177,5 +183,79 @@ public class TicketSummary {
 
     public void setGuestPhone(String guestPhone) {
         this.guestPhone = guestPhone;
+    }
+
+    public String getDepartureDisplay() {
+        LocalDateTime time = getDepartureTime();
+        return time != null ? time.format(DEPARTURE_FORMATTER) : "Đang cập nhật";
+    }
+
+    public String getStatusLabel() {
+        String normalized = normalizeStatus();
+        switch (normalized) {
+            case "issued":
+                return "Đã phát hành";
+            case "used":
+            case "checkedin":
+            case "checked-in":
+                return "Đã sử dụng";
+            case "cancelled":
+            case "canceled":
+                return "Đã hủy";
+            case "reserved":
+                return "Đã giữ chỗ";
+            case "pending":
+                return "Đang xử lý";
+            default:
+                return ticketStatus != null ? ticketStatus : "Không rõ";
+        }
+    }
+
+    public String getStatusBadgeClass() {
+        String normalized = normalizeStatus();
+        switch (normalized) {
+            case "issued":
+                return "bg-label-info";
+            case "used":
+            case "checkedin":
+            case "checked-in":
+                return "bg-label-success";
+            case "cancelled":
+            case "canceled":
+                return "bg-label-danger";
+            case "pending":
+            case "reserved":
+                return "bg-label-warning";
+            default:
+                return "bg-label-secondary";
+        }
+    }
+
+    public String getSeatDisplay() {
+        return seatNumber != null && !seatNumber.isBlank() ? seatNumber : "Đang sắp xếp";
+    }
+
+    public String getHistoricalSeatDisplay() {
+        return seatNumber != null && !seatNumber.isBlank() ? seatNumber : "N/A";
+    }
+
+    public String getPreferredContact() {
+        if (guestPhone != null && !guestPhone.isBlank()) {
+            return guestPhone;
+        }
+        if (customerPhone != null && !customerPhone.isBlank()) {
+            return customerPhone;
+        }
+        if (customerEmail != null && !customerEmail.isBlank()) {
+            return customerEmail;
+        }
+        if (guestEmail != null && !guestEmail.isBlank()) {
+            return guestEmail;
+        }
+        return DEFAULT_SUPPORT_EMAIL;
+    }
+
+    private String normalizeStatus() {
+        return ticketStatus != null ? ticketStatus.trim().toLowerCase(Locale.ROOT) : "";
     }
 }

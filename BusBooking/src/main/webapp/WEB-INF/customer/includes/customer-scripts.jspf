@@ -1,0 +1,4 @@
+<script src="${vendorPath}/libs/popper/popper.js"></script>
+<script src="${vendorPath}/js/bootstrap.js"></script>
+<script src="${vendorPath}/js/menu.js"></script>
+<script src="${jsPath}/main.js"></script>

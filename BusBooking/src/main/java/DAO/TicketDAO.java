@@ -1,8 +1,8 @@
 package DAO;
 
 import DBContext.DBContext;
-import dto.TicketSummary;
-import dto.TripOption;
+import dto.ticket.TicketSummary;
+import dto.ticket.TripOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -118,6 +118,43 @@ public class TicketDAO {
             LOGGER.log(Level.SEVERE, "Failed to find ticket " + ticketId, ex);
         }
         return null;
+    }
+
+    public List<TicketSummary> findTicketsForCustomer(int customerId) {
+        String sql = "SELECT t.TicketID, t.TicketNumber, t.TicketStatus, t.IssuedDate, t.CheckedInAt, "
+                + "staff.FullName AS CheckedInByName, b.BookingID, b.SeatNumber, b.SeatStatus, b.BookingStatus, b.TripID, "
+                + "trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, "
+                + "cust.FullName AS CustomerName, cust.Email AS CustomerEmail, cust.PhoneNumber AS CustomerPhone, "
+                + "b.GuestEmail, b.GuestPhoneNumber "
+                + "FROM TICKET t "
+                + "JOIN BOOKING b ON t.BookingID = b.BookingID "
+                + "JOIN TRIP trip ON b.TripID = trip.TripID "
+                + "JOIN ROUTE route ON trip.RouteID = route.RouteID "
+                + "LEFT JOIN [USER] cust ON b.UserID = cust.UserID "
+                + "LEFT JOIN [USER] staff ON t.CheckedInBy = staff.UserID "
+                + "WHERE b.UserID = ? "
+                + "ORDER BY trip.DepartureTime DESC, t.IssuedDate DESC";
+
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading tickets for customer {0}", customerId);
+                return Collections.emptyList();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, customerId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<TicketSummary> results = new ArrayList<>();
+                    while (rs.next()) {
+                        results.add(mapTicket(rs));
+                    }
+                    return results;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to load tickets for customer " + customerId, ex);
+            return Collections.emptyList();
+        }
     }
 
     public Integer createPhysicalTicket(int tripId, Integer customerId, String guestPhone, String guestEmail, String seatNumber) {
@@ -288,6 +325,77 @@ public class TicketDAO {
             LOGGER.log(Level.SEVERE, "Unexpected error when verifying ticket", ex);
         }
         return false;
+    }
+
+    /**
+     * Deletes a ticket and associated booking/payments so admins can void incorrect records.
+     */
+    public boolean deleteTicket(int ticketId) {
+        String selectBooking = "SELECT BookingID FROM TICKET WHERE TicketID = ?";
+        String deletePayments = "DELETE FROM PAYMENT WHERE BookingID = ?";
+        String deleteSupport = "DELETE FROM SUPPORT_TICKET WHERE BookingID = ?";
+        String deleteTicket = "DELETE FROM TICKET WHERE TicketID = ?";
+        String deleteBooking = "DELETE FROM BOOKING WHERE BookingID = ?";
+
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null when deleting ticket {0}", ticketId);
+                return false;
+            }
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            Integer bookingId = null;
+            try (PreparedStatement ps = conn.prepareStatement(selectBooking)) {
+                ps.setInt(1, ticketId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        bookingId = rs.getInt("BookingID");
+                        if (rs.wasNull()) {
+                            bookingId = null;
+                        }
+                    }
+                }
+            }
+            if (bookingId == null) {
+                conn.setAutoCommit(previousAutoCommit);
+                return false;
+            }
+
+            try (PreparedStatement paymentStmt = conn.prepareStatement(deletePayments);
+                 PreparedStatement supportStmt = conn.prepareStatement(deleteSupport);
+                 PreparedStatement ticketStmt = conn.prepareStatement(deleteTicket);
+                 PreparedStatement bookingStmt = conn.prepareStatement(deleteBooking)) {
+
+                paymentStmt.setInt(1, bookingId);
+                paymentStmt.executeUpdate();
+
+                supportStmt.setInt(1, bookingId);
+                supportStmt.executeUpdate();
+
+                ticketStmt.setInt(1, ticketId);
+                if (ticketStmt.executeUpdate() == 0) {
+                    conn.rollback();
+                    conn.setAutoCommit(previousAutoCommit);
+                    return false;
+                }
+
+                bookingStmt.setInt(1, bookingId);
+                bookingStmt.executeUpdate();
+
+                conn.commit();
+                conn.setAutoCommit(previousAutoCommit);
+                return true;
+            } catch (SQLException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to delete ticket " + ticketId, ex);
+            return false;
+        }
     }
 
     public List<TripOption> findUpcomingTrips(int limit) {
@@ -492,7 +600,7 @@ public class TicketDAO {
         summary.setBookingStatus(rs.getString("BookingStatus"));
         String origin = rs.getString("Origin");
         String destination = rs.getString("Destination");
-        summary.setRouteLabel((origin != null ? origin : "?") + " - " + (destination != null ? destination : "?"));
+    summary.setRouteLabel(composeRouteLabel(origin, destination));
         summary.setDepartureTime(toLocalDateTime(rs.getTimestamp("DepartureTime")));
         summary.setArrivalTime(toLocalDateTime(rs.getTimestamp("ArrivalTime")));
         summary.setCustomerName(rs.getString("CustomerName"));
@@ -505,6 +613,12 @@ public class TicketDAO {
 
     private LocalDateTime toLocalDateTime(Timestamp timestamp) {
         return timestamp != null ? timestamp.toLocalDateTime() : null;
+    }
+
+    private String composeRouteLabel(String origin, String destination) {
+        String safeOrigin = origin != null && !origin.isBlank() ? origin : "?";
+        String safeDestination = destination != null && !destination.isBlank() ? destination : "?";
+        return safeOrigin + " → " + safeDestination;
     }
 
     private String generateTicketNumber(int tripId) {

@@ -1,7 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Collections" %>
-<%@ page import="dto.SupportTicketView" %>
+<%@ page import="dto.support.SupportTicketView" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
 <%
     List<SupportTicketView> tickets = (List<SupportTicketView>) request.getAttribute("tickets");

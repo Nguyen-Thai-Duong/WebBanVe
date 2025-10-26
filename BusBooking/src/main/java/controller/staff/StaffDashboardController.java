@@ -2,8 +2,8 @@ package controller.staff;
 
 import DAO.SupportTicketDAO;
 import DAO.TicketDAO;
-import dto.SupportTicketView;
-import dto.TicketSummary;
+import dto.support.SupportTicketView;
+import dto.ticket.TicketSummary;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;

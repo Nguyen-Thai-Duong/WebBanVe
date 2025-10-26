@@ -1,20 +1,26 @@
 package DBContext;
 
+import java.sql.Connection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Simple entry-point to verify database connectivity via DBContext.
  */
 public class DBConnectionChecker {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DBConnectionChecker.class);
+
     public static void main(String[] args) {
         try (DBContext dbContext = new DBContext()) {
-            if (dbContext.getConnection() != null && !dbContext.getConnection().isClosed()) {
-                System.out.println("Database connection established successfully.");
+            Connection connection = dbContext.getConnection();
+            if (connection != null && !connection.isClosed()) {
+                LOGGER.info("Database connection established successfully.");
             } else {
-                System.err.println("Database connection is null or closed.");
+                LOGGER.warn("Database connection is null or closed.");
             }
         } catch (Exception e) {
-            System.err.println("Database connectivity test failed: " + e.getMessage());
-            e.printStackTrace();
+            LOGGER.error("Database connectivity test failed.", e);
         }
     }
 }

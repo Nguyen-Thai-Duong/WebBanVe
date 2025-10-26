@@ -1,0 +1,107 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<c:set var="view" value="${adminView}" />
+<c:choose>
+    <c:when test="${empty view}">
+        <div class="col-12">
+            <div class="alert alert-warning mb-0" role="alert">
+                Không thể tải dữ liệu dashboard lúc này. Vui lòng thử lại sau.
+            </div>
+        </div>
+    </c:when>
+    <c:otherwise>
+        <div class="col-lg-6 col-xl-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="card-title d-flex align-items-start justify-content-between">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-warning"><i class="bx bx-money"></i></span>
+                        </div>
+                    </div>
+                    <span class="fw-semibold d-block mb-1">Doanh thu tích lũy</span>
+                    <h3 class="card-title mb-2"><c:out value="${view.totalRevenueLabel}" /></h3>
+                    <small class="text-muted">Tổng tất cả giao dịch đã ghi nhận</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 col-xl-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="card-title d-flex align-items-start justify-content-between">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-success"><i class="bx bx-trending-up"></i></span>
+                        </div>
+                    </div>
+                    <span class="fw-semibold d-block mb-1">Doanh thu 30 ngày</span>
+                    <h3 class="card-title mb-2"><c:out value="${view.recentRevenueLabel}" /></h3>
+                    <small class="text-muted">Gồm cả hoàn tiền (nếu có)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 col-xl-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="card-title d-flex align-items-start justify-content-between">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-primary"><i class="bx bx-bus"></i></span>
+                        </div>
+                    </div>
+                    <span class="fw-semibold d-block mb-1">Chuyến khởi hành 30 ngày</span>
+                    <h3 class="card-title mb-2"><c:out value="${view.upcomingTripsLabel}" /></h3>
+                    <small class="text-muted">Tổng số chuyến: <c:out value="${view.totalTripsLabel}" /></small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 col-xl-3 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="card-title d-flex align-items-start justify-content-between">
+                        <div class="avatar flex-shrink-0">
+                            <span class="avatar-initial rounded bg-label-info"><i class="bx bx-support"></i></span>
+                        </div>
+                    </div>
+                    <span class="fw-semibold d-block mb-1">Yêu cầu hỗ trợ mở</span>
+                    <h3 class="card-title mb-2"><c:out value="${view.activeSupportLabel}" /></h3>
+                    <small class="text-muted">Nhân viên: <c:out value="${view.staffCountLabel}" /> • Nhà xe: <c:out value="${view.operatorCountLabel}" /></small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-12 col-xl-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Vé phát hành 30 ngày</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div>
+                            <div class="text-muted">Vé đã xuất</div>
+                            <h4 class="mb-0"><c:out value="${view.ticketsIssued30DaysLabel}" /></h4>
+                        </div>
+                        <div>
+                            <div class="text-muted">Đã check-in</div>
+                            <h4 class="mb-0"><c:out value="${view.ticketsVerified30DaysLabel}" /></h4>
+                        </div>
+                        <div>
+                            <div class="text-muted">Còn hiệu lực</div>
+                            <h4 class="mb-0"><c:out value="${view.issuedCountLabel}" /></h4>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-muted small mb-2">Tình trạng vé</div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: ${view.usedPercentStyle}%" aria-valuenow="${view.usedCount}" aria-valuemin="0" aria-valuemax="${view.totalTicketCount}"></div>
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: ${view.issuedPercentStyle}%" aria-valuenow="${view.issuedCount}" aria-valuemin="0" aria-valuemax="${view.totalTicketCount}"></div>
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: ${view.cancelledPercentStyle}%" aria-valuenow="${view.cancelledCount}" aria-valuemin="0" aria-valuemax="${view.totalTicketCount}"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="badge bg-label-success">Đã dùng: <c:out value="${view.usedCountLabel}" /> (<c:out value="${view.usedPercentDisplay}" />%)</span>
+                            <span class="badge bg-label-warning">Chưa dùng: <c:out value="${view.issuedCountLabel}" /> (<c:out value="${view.issuedPercentDisplay}" />%)</span>
+                            <span class="badge bg-label-danger">Hủy: <c:out value="${view.cancelledCountLabel}" /> (<c:out value="${view.cancelledPercentDisplay}" />%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </c:otherwise>
+</c:choose>

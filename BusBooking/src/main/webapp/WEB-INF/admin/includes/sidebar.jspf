@@ -95,6 +95,30 @@
                 <div data-i18n="Customers">Khách hàng</div>
             </a>
         </li>
+        <li class="menu-item <%= "staff".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/admin/staff" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-id-card"></i>
+                <div data-i18n="Staff">Nhân viên</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "operators".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/admin/operators" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-building"></i>
+                <div data-i18n="Operators">Nhà xe</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "tickets".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/admin/tickets" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-receipt"></i>
+                <div data-i18n="Tickets">Vé</div>
+            </a>
+        </li>
+        <li class="menu-item <%= "reports".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/admin/reports" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-line-chart"></i>
+                <div data-i18n="Reports">Báo cáo</div>
+            </a>
+        </li>
     </ul>
 </aside>
 <!-- / Menu -->

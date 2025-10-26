@@ -1,8 +1,8 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Collections" %>
-<%@ page import="dto.TicketSummary" %>
-<%@ page import="dto.TripOption" %>
+<%@ page import="dto.ticket.TicketSummary" %>
+<%@ page import="dto.ticket.TripOption" %>
 <%@ page import="java.time.format.DateTimeFormatter" %>
 <%
     List<TicketSummary> tickets = (List<TicketSummary>) request.getAttribute("tickets");

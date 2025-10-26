@@ -6,6 +6,7 @@
     String role = currentUser != null ? currentUser.getRole() : null;
     String dashboardLink = null;
     String profileLink = null;
+    String ticketsLink = null;
     String roleLabel = null;
     if (role != null) {
         switch (role) {
@@ -24,7 +25,8 @@
             case "Customer":
             default:
                 roleLabel = "Khách hàng";
-                profileLink = contextPath + "/customer/profile";
+                profileLink = contextPath + "/app/customer/profile";
+                ticketsLink = contextPath + "/app/customer/tickets";
                 break;
         }
     }
@@ -83,10 +85,18 @@
                             </div>
                         </div>
                     <% } %>
-                    <a href="<%= contextPath %>/logout" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
-                        <i class="bx bx-log-out fs-5"></i>
-                        <span>Đăng xuất</span>
-                    </a>
+                    <div class="d-flex align-items-center gap-2">
+                        <% if (ticketsLink != null) { %>
+                            <a href="<%= ticketsLink %>" class="btn btn-warning btn-sm rounded-pill px-3 d-flex align-items-center gap-2 text-white">
+                                <i class="bx bx-receipt"></i>
+                                <span>Vé của tôi</span>
+                            </a>
+                        <% } %>
+                        <a href="<%= contextPath %>/logout" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-2">
+                            <i class="bx bx-log-out fs-5"></i>
+                            <span>Đăng xuất</span>
+                        </a>
+                    </div>
                 <% } %>
             </div>
         </div>

@@ -1,4 +1,4 @@
-package dto;
+package dto.ticket;
 
 import java.time.LocalDateTime;
 
