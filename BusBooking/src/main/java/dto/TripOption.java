@@ -1,6 +1,7 @@
 package dto;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Represents a simplified trip projection for selection lists.
@@ -51,5 +52,20 @@ public class TripOption {
 
     public void setVehicleLabel(String vehicleLabel) {
         this.vehicleLabel = vehicleLabel;
+    }
+
+    public String formatDeparture(DateTimeFormatter formatter) {
+        return formatDate(departureTime, formatter);
+    }
+
+    public String formatArrival(DateTimeFormatter formatter) {
+        return formatDate(arrivalTime, formatter);
+    }
+
+    private String formatDate(LocalDateTime dateTime, DateTimeFormatter formatter) {
+        if (dateTime == null || formatter == null) {
+            return null;
+        }
+        return formatter.format(dateTime);
     }
 }

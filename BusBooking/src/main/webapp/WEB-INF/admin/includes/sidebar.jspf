@@ -90,6 +90,12 @@
                 <div data-i18n="Trips">Chuyến đi</div>
             </a>
         </li>
+        <li class="menu-item ${activeMenuLower == 'bookings' ? 'active' : ''}">
+            <a href="${contextPath}/admin/bookings" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-book-content"></i>
+                <div data-i18n="Bookings">Đơn đặt chỗ</div>
+            </a>
+        </li>
         <li class="menu-item ${activeMenuLower == 'customers' ? 'active' : ''}">
             <a href="${contextPath}/admin/customers" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-user"></i>
