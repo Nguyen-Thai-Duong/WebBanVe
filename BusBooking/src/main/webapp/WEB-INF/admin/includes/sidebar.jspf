@@ -102,6 +102,12 @@
                 <div data-i18n="Staff">Nhân viên</div>
             </a>
         </li>
+        <li class="menu-item ${activeMenuLower == 'operators' ? 'active' : ''}">
+            <a href="${contextPath}/admin/operators" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-user-voice"></i>
+                <div data-i18n="Operators">Người phụ trách</div>
+            </a>
+        </li>
         <li class="menu-item ${activeMenuLower == 'vehicles' ? 'active' : ''}">
             <a href="${contextPath}/admin/vehicles" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-car"></i>
