@@ -12,22 +12,7 @@
     if (trips == null) {
         trips = Collections.emptyList();
     }
-    List<Route> routes = (List<Route>) request.getAttribute("routes");
-    if (routes == null) {
-        routes = Collections.emptyList();
-    }
-    List<Vehicle> vehicles = (List<Vehicle>) request.getAttribute("vehicles");
-    if (vehicles == null) {
-        vehicles = Collections.emptyList();
-    }
-    List<User> operators = (List<User>) request.getAttribute("operators");
-    if (operators == null) {
-        operators = Collections.emptyList();
-    }
-
-    String[] statuses = {"Scheduled", "Departed", "Arrived", "Delayed", "Cancelled"};
     DateTimeFormatter tableFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-    DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     String contextPath = request.getContextPath();
     String assetBase = contextPath + "/assets/sneat-1.0.0/assets";
     String vendorPath = assetBase + "/vendor";
@@ -44,6 +29,7 @@
 
     request.setAttribute("activeMenu", "trips");
     request.setAttribute("navbarSearchPlaceholder", "Tìm kiếm chuyến đi...");
+    request.setAttribute("navbarSearchAriaLabel", "Tìm kiếm chuyến đi");
 %>
 <!DOCTYPE html>
 <html
@@ -105,9 +91,9 @@
                             <h4 class="fw-bold mb-1">Quản lý chuyến đi</h4>
                             <span class="text-muted">Thêm, sửa, xóa và theo dõi trạng thái chuyến đi.</span>
                         </div>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTripModal">
+                        <a class="btn btn-primary" href="<%= contextPath %>/admin/trips/new">
                             <i class="bx bx-plus"></i> Thêm chuyến đi
-                        </button>
+                        </a>
                     </div>
 
                     <% if (flashMessage != null) { %>
@@ -147,7 +133,6 @@
                                 <% } else { %>
                                     <% for (Trip trip : trips) {
                                            String viewId = "viewTripModal" + trip.getTripId();
-                                           String modalId = "editTripModal" + trip.getTripId();
                                            String deleteId = "deleteTripModal" + trip.getTripId();
                                     %>
                                         <tr>
@@ -189,6 +174,9 @@
                                                     <button type="button" class="btn btn-sm btn-icon btn-info text-white" data-bs-toggle="modal" data-bs-target="#<%= viewId %>">
                                                         <i class="bx bx-show"></i>
                                                     </button>
+                                                    <a class="btn btn-sm btn-icon btn-primary" href="<%= contextPath %>/admin/trips/edit?tripId=<%= trip.getTripId() %>">
+                                                        <i class="bx bx-edit"></i>
+                                                    </a>
                                                     <button type="button" class="btn btn-sm btn-icon btn-danger" data-bs-toggle="modal" data-bs-target="#<%= deleteId %>">
                                                         <i class="bx bx-trash"></i>
                                                     </button>
@@ -203,7 +191,6 @@
                     <% if (!trips.isEmpty()) {
                            for (Trip trip : trips) {
                                String viewId = "viewTripModal" + trip.getTripId();
-                               String modalId = "editTripModal" + trip.getTripId();
                                String deleteId = "deleteTripModal" + trip.getTripId();
                                java.time.Duration tripDuration = (trip.getDepartureTime() != null && trip.getArrivalTime() != null)
                                        ? java.time.Duration.between(trip.getDepartureTime(), trip.getArrivalTime())
@@ -296,85 +283,10 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
-                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#<%= modalId %>">
+                                    <a class="btn btn-primary" href="<%= contextPath %>/admin/trips/edit?tripId=<%= trip.getTripId() %>">
                                         <i class="bx bx-edit me-1"></i> Chỉnh sửa chuyến đi
-                                    </button>
+                                    </a>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal fade" id="<%= modalId %>" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                            <div class="modal-content">
-                                <form action="<%= contextPath %>/admin/trips" method="post" class="needs-validation" novalidate>
-                                    <input type="hidden" name="action" value="update">
-                                    <input type="hidden" name="tripId" value="<%= trip.getTripId() %>">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Cập nhật chuyến đi #<%= trip.getTripId() %></h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="routeId<%= trip.getTripId() %>">Tuyến đường</label>
-                                                <select class="form-select" id="routeId<%= trip.getTripId() %>" name="routeId" required>
-                                                    <option value="" disabled>Chọn tuyến</option>
-                                                    <% for (Route route : routes) { %>
-                                                        <option value="<%= route.getRouteId() %>" <%= trip.getRoute() != null && route.getRouteId().equals(trip.getRoute().getRouteId()) ? "selected" : "" %>>
-                                                            <%= route.getOrigin() %> → <%= route.getDestination() %>
-                                                        </option>
-                                                    <% } %>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="vehicleId<%= trip.getTripId() %>">Xe</label>
-                                                <select class="form-select" id="vehicleId<%= trip.getTripId() %>" name="vehicleId" required>
-                                                    <option value="" disabled>Chọn xe</option>
-                                                    <% for (Vehicle vehicle : vehicles) { %>
-                                                        <option value="<%= vehicle.getVehicleId() %>" <%= trip.getVehicle() != null && vehicle.getVehicleId().equals(trip.getVehicle().getVehicleId()) ? "selected" : "" %>>
-                                                            <%= vehicle.getLicensePlate() %> - <%= vehicle.getModel() != null ? vehicle.getModel() : "" %>
-                                                        </option>
-                                                    <% } %>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="operatorId<%= trip.getTripId() %>">Nhà xe</label>
-                                                <select class="form-select" id="operatorId<%= trip.getTripId() %>" name="operatorId" required>
-                                                    <option value="" disabled>Chọn nhà xe</option>
-                                                    <% for (User operator : operators) { %>
-                                                        <option value="<%= operator.getUserId() %>" <%= trip.getOperator() != null && operator.getUserId().equals(trip.getOperator().getUserId()) ? "selected" : "" %>>
-                                                            <%= operator.getFullName() %> (<%= operator.getEmployeeCode() != null ? operator.getEmployeeCode() : "" %>)
-                                                        </option>
-                                                    <% } %>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="price<%= trip.getTripId() %>">Giá vé (VND)</label>
-                                                <input type="number" class="form-control" id="price<%= trip.getTripId() %>" name="price" step="0.01" min="0" value="<%= trip.getPrice() != null ? trip.getPrice().toPlainString() : "0" %>" required>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="departureTime<%= trip.getTripId() %>">Giờ khởi hành</label>
-                                                <input type="datetime-local" class="form-control" id="departureTime<%= trip.getTripId() %>" name="departureTime" value="<%= trip.getDepartureTime() != null ? trip.getDepartureTime().format(inputFormatter) : "" %>" required>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="arrivalTime<%= trip.getTripId() %>">Giờ đến</label>
-                                                <input type="datetime-local" class="form-control" id="arrivalTime<%= trip.getTripId() %>" name="arrivalTime" value="<%= trip.getArrivalTime() != null ? trip.getArrivalTime().format(inputFormatter) : "" %>">
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="tripStatus<%= trip.getTripId() %>">Trạng thái</label>
-                                                <select class="form-select" id="tripStatus<%= trip.getTripId() %>" name="tripStatus" required>
-                                                    <% for (String status : statuses) { %>
-                                                        <option value="<%= status %>" <%= status.equalsIgnoreCase(trip.getTripStatus()) ? "selected" : "" %>><%= status %></option>
-                                                    <% } %>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                                    </div>
-                                </form>
                             </div>
                         </div>
                     </div>
@@ -405,76 +317,6 @@
                     %>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Create modal -->
-<div class="modal fade" id="createTripModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <form action="<%= contextPath %>/admin/trips" method="post" class="needs-validation" novalidate>
-                <input type="hidden" name="action" value="create">
-                <div class="modal-header">
-                    <h5 class="modal-title">Tạo chuyến đi mới</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label" for="routeIdCreate">Tuyến đường</label>
-                            <select class="form-select" id="routeIdCreate" name="routeId" required>
-                                <option value="" selected disabled>Chọn tuyến</option>
-                                <% for (Route route : routes) { %>
-                                    <option value="<%= route.getRouteId() %>"><%= route.getOrigin() %> → <%= route.getDestination() %></option>
-                                <% } %>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="vehicleIdCreate">Xe</label>
-                            <select class="form-select" id="vehicleIdCreate" name="vehicleId" required>
-                                <option value="" selected disabled>Chọn xe</option>
-                                <% for (Vehicle vehicle : vehicles) { %>
-                                    <option value="<%= vehicle.getVehicleId() %>"><%= vehicle.getLicensePlate() %> - <%= vehicle.getModel() != null ? vehicle.getModel() : "" %></option>
-                                <% } %>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="operatorIdCreate">Nhà xe</label>
-                            <select class="form-select" id="operatorIdCreate" name="operatorId" required>
-                                <option value="" selected disabled>Chọn nhà xe</option>
-                                <% for (User operator : operators) { %>
-                                    <option value="<%= operator.getUserId() %>"><%= operator.getFullName() %> (<%= operator.getEmployeeCode() != null ? operator.getEmployeeCode() : "" %>)</option>
-                                <% } %>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="priceCreate">Giá vé (VND)</label>
-                            <input type="number" class="form-control" id="priceCreate" name="price" step="0.01" min="0" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="departureTimeCreate">Giờ khởi hành</label>
-                            <input type="datetime-local" class="form-control" id="departureTimeCreate" name="departureTime" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="arrivalTimeCreate">Giờ đến</label>
-                            <input type="datetime-local" class="form-control" id="arrivalTimeCreate" name="arrivalTime">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="tripStatusCreate">Trạng thái</label>
-                            <select class="form-select" id="tripStatusCreate" name="tripStatus" required>
-                                <% for (String status : statuses) { %>
-                                    <option value="<%= status %>" <%= "Scheduled".equalsIgnoreCase(status) ? "selected" : "" %>><%= status %></option>
-                                <% } %>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Tạo chuyến</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>

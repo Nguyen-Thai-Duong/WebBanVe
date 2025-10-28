@@ -28,7 +28,6 @@
     request.setAttribute("activeMenu", "customers");
     request.setAttribute("navbarSearchPlaceholder", "Tìm kiếm khách hàng...");
     request.setAttribute("navbarSearchAriaLabel", "Tìm kiếm khách hàng...");
-    String[] statuses = {"Active", "Inactive", "Suspended", "Locked"};
 %>
 <!DOCTYPE html>
 <html
@@ -89,9 +88,9 @@
                             <h4 class="fw-bold mb-1">Danh sách khách hàng</h4>
                             <span class="text-muted">Theo dõi, tạo mới và cập nhật thông tin khách hàng.</span>
                         </div>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCustomerModal">
+                        <a class="btn btn-primary" href="<%= contextPath %>/admin/customers/new">
                             <i class="bx bx-user-plus"></i> Thêm khách hàng
-                        </button>
+                        </a>
                     </div>
 
                     <% if (flashMessage != null) { %>
@@ -129,7 +128,6 @@
                                 <% } else {
                                        for (User customer : customers) {
                                            String viewId = "viewCustomerModal" + customer.getUserId();
-                                           String editId = "editCustomerModal" + customer.getUserId();
                                            String deleteId = "deleteCustomerModal" + customer.getUserId();
                                            String initials = customer.getFullName() != null && !customer.getFullName().isBlank()
                                                    ? customer.getFullName().substring(0, 1).toUpperCase()
@@ -160,6 +158,9 @@
                                             <button type="button" class="btn btn-sm btn-icon btn-info text-white" data-bs-toggle="modal" data-bs-target="#<%= viewId %>">
                                                 <i class="bx bx-show"></i>
                                             </button>
+                                            <a class="btn btn-sm btn-icon btn-primary" href="<%= contextPath %>/admin/customers/edit?userId=<%= customer.getUserId() %>">
+                                                <i class="bx bx-edit"></i>
+                                            </a>
                                             <button type="button" class="btn btn-sm btn-icon btn-danger" data-bs-toggle="modal" data-bs-target="#<%= deleteId %>">
                                                 <i class="bx bx-trash"></i>
                                             </button>
@@ -176,7 +177,6 @@
                     <% if (!customers.isEmpty()) {
                            for (User customer : customers) {
                                String viewId = "viewCustomerModal" + customer.getUserId();
-                               String editId = "editCustomerModal" + customer.getUserId();
                                String deleteId = "deleteCustomerModal" + customer.getUserId();
                     %>
                     <div class="modal fade" id="<%= viewId %>" tabindex="-1" aria-hidden="true">
@@ -224,61 +224,10 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
-                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#<%= editId %>">
+                                    <a class="btn btn-primary" href="<%= contextPath %>/admin/customers/edit?userId=<%= customer.getUserId() %>">
                                         <i class="bx bx-edit me-1"></i> Chỉnh sửa thông tin
-                                    </button>
+                                    </a>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal fade" id="<%= editId %>" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                            <div class="modal-content">
-                                <form action="<%= contextPath %>/admin/customers" method="post" class="needs-validation" novalidate>
-                                    <input type="hidden" name="action" value="update">
-                                    <input type="hidden" name="userId" value="<%= customer.getUserId() %>">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Cập nhật khách hàng #<%= customer.getUserId() %></h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="fullName<%= customer.getUserId() %>">Họ và tên</label>
-                                                <input type="text" class="form-control" id="fullName<%= customer.getUserId() %>" name="fullName" value="<%= customer.getFullName() %>" required>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="email<%= customer.getUserId() %>">Email</label>
-                                                <input type="email" class="form-control" id="email<%= customer.getUserId() %>" name="email" value="<%= customer.getEmail() %>" required>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="phone<%= customer.getUserId() %>">Điện thoại</label>
-                                                <input type="text" class="form-control" id="phone<%= customer.getUserId() %>" name="phoneNumber" value="<%= customer.getPhoneNumber() %>" required>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="form-label" for="status<%= customer.getUserId() %>">Trạng thái</label>
-                                                <select class="form-select" id="status<%= customer.getUserId() %>" name="status" required>
-                                                    <% for (String status : statuses) { %>
-                                                        <option value="<%= status %>" <%= status.equalsIgnoreCase(customer.getStatus()) ? "selected" : "" %>><%= status %></option>
-                                                    <% } %>
-                                                </select>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label" for="address<%= customer.getUserId() %>">Địa chỉ</label>
-                                                <textarea class="form-control" id="address<%= customer.getUserId() %>" name="address" rows="2"><%= customer.getAddress() != null ? customer.getAddress() : "" %></textarea>
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label" for="password<%= customer.getUserId() %>">Đặt lại mật khẩu (tùy chọn)</label>
-                                                <input type="password" class="form-control" id="password<%= customer.getUserId() %>" name="password" placeholder="Nhập mật khẩu mới nếu muốn thay đổi">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                                    </div>
-                                </form>
                             </div>
                         </div>
                     </div>
@@ -310,57 +259,6 @@
                     %>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="createCustomerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <form action="<%= contextPath %>/admin/customers" method="post" class="needs-validation" novalidate>
-                <input type="hidden" name="action" value="create">
-                <div class="modal-header">
-                    <h5 class="modal-title">Tạo khách hàng mới</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label" for="createFullName">Họ và tên</label>
-                            <input type="text" class="form-control" id="createFullName" name="fullName" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="createEmail">Email</label>
-                            <input type="email" class="form-control" id="createEmail" name="email" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="createPhone">Điện thoại</label>
-                            <input type="text" class="form-control" id="createPhone" name="phoneNumber" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="createStatus">Trạng thái</label>
-                            <select class="form-select" id="createStatus" name="status" required>
-                                <% for (String status : statuses) { %>
-                                    <option value="<%= status %>" <%= "Active".equals(status) ? "selected" : "" %>><%= status %></option>
-                                <% } %>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label" for="createAddress">Địa chỉ</label>
-                            <textarea class="form-control" id="createAddress" name="address" rows="2"></textarea>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label" for="createPassword">Mật khẩu</label>
-                            <input type="password" class="form-control" id="createPassword" name="password" required>
-                            <div class="form-text">Mật khẩu sẽ được mã hóa SHA-256 trước khi lưu.</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Tạo khách hàng</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
