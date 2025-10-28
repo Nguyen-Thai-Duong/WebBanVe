@@ -1,7 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<%@ taglib prefix="app" tagdir="/WEB-INF/tags" %>
 
 <c:set var="trips" value="${requestScope.trips}" />
 <c:set var="tableFormatter" value="${requestScope.tableFormatter}" />
@@ -41,7 +40,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese" rel="stylesheet" />
 
     <!-- Icons -->
     <link rel="stylesheet" href="${vendorPath}/fonts/boxicons.css" />
@@ -139,7 +138,7 @@
                                         </td>
                                         <td>${trip.formatDeparture(tableFormatter) != null ? trip.formatDeparture(tableFormatter) : 'N/A'}</td>
                                         <td>${trip.formatArrival(tableFormatter) != null ? trip.formatArrival(tableFormatter) : 'N/A'}</td>
-                                        <td><app:currency value="${trip.price}" /></td>
+                                        <td>${trip.price != null ? trip.price.toPlainString() : '0'}</td>
                                         <td>
                                             <c:choose>
                                                 <c:when test="${trip.vehicle != null}">
@@ -238,7 +237,7 @@
                                         </div>
                                         <div class="col-md-3">
                                             <small class="text-muted text-uppercase d-block">Giá vé</small>
-                                            <span class="fw-semibold text-warning"><app:currency value="${trip.price}" /></span>
+                                            <span class="fw-semibold text-warning">${trip.price != null ? trip.price.toPlainString() : '0'} VND</span>
                                         </div>
                                         <div class="col-md-3">
                                             <small class="text-muted text-uppercase d-block">Trạng thái</small>

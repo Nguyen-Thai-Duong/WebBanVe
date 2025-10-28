@@ -1,7 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese");
 
 :root {
-  --app-font-family: "Inter", "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --app-font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --bs-font-sans-serif: var(--app-font-family);
   --bs-body-font-family: var(--app-font-family);
 }
 

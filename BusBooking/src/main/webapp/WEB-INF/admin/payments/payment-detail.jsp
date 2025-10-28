@@ -2,7 +2,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ taglib prefix="app" tagdir="/WEB-INF/tags" %>
 
 <c:set var="payment" value="${requestScope.payment}" />
 <c:set var="dateFormatter" value="${requestScope.dateFormatter}" />
@@ -31,7 +30,7 @@
     <link rel="icon" type="image/x-icon" href="${imgPath}/favicon/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese" rel="stylesheet" />
     <link rel="stylesheet" href="${vendorPath}/fonts/boxicons.css" />
     <link rel="stylesheet" href="${vendorPath}/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="${vendorPath}/css/theme-default.css" class="template-customizer-theme-css" />
@@ -86,7 +85,7 @@
                                         <div class="col-sm-6">
                                             <div class="label-muted">Số tiền</div>
                                             <div class="fw-semibold text-primary">
-                                                <app:currency value="${payment.amount}" />
+                                                <fmt:formatNumber value="${payment.amount}" type="number" minFractionDigits="0" maxFractionDigits="2" /> ₫
                                             </div>
                                         </div>
                                         <div class="col-sm-6">

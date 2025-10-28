@@ -33,7 +33,7 @@
     <link rel="icon" type="image/x-icon" href="${imgPath}/favicon/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese" rel="stylesheet" />
     <link rel="stylesheet" href="${vendorPath}/fonts/boxicons.css" />
     <link rel="stylesheet" href="${vendorPath}/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="${vendorPath}/css/theme-default.css" class="template-customizer-theme-css" />
@@ -95,7 +95,7 @@
                             <table class="table table-hover table-striped align-middle">
                                 <thead>
                                 <tr>
-                                    <th>Mã đơn</th>
+                                    <th>ID</th>
                                     <th>Chuyến đi</th>
                                     <th>Khách/Khách lẻ</th>
                                     <th>Ghế</th>
@@ -118,23 +118,11 @@
                                     <c:set var="statusBadge" value="${statusLower eq 'confirmed' ? 'success' : (statusLower eq 'pending' ? 'warning' : (statusLower eq 'cancelled' ? 'danger' : 'secondary'))}" />
                                     <c:set var="seatStatusLower" value="${fn:toLowerCase(booking.seatStatus)}" />
                                     <c:set var="seatBadge" value="${seatStatusLower eq 'booked' ? 'primary' : (seatStatusLower eq 'reserved' ? 'info' : 'secondary')}" />
-                                    <c:set var="routeInactive" value="${not empty booking.routeStatus and fn:toLowerCase(booking.routeStatus) ne 'active'}" />
-                                    <c:choose>
-                                        <c:when test="${not empty booking.formattedCode}">
-                                            <c:set var="bookingCode" value="${booking.formattedCode}" />
-                                        </c:when>
-                                        <c:otherwise>
-                                            <c:set var="bookingCode">#${booking.bookingId}</c:set>
-                                        </c:otherwise>
-                                    </c:choose>
                                     <tr>
-                                        <td><strong>${bookingCode}</strong></td>
+                                        <td><strong>#${booking.bookingId}</strong></td>
                                         <td>
                                             <div class="d-flex flex-column">
                                                 <span class="trip-route">${booking.routeOrigin} &rarr; ${booking.routeDestination}</span>
-                                                <c:if test="${routeInactive}">
-                                                    <span class="badge bg-label-secondary mt-1 d-inline-flex">Tuyến tạm ngưng</span>
-                                                </c:if>
                                                 <small class="text-muted">
                                                     ${booking.formatDepartureTime(dateFormatter) != null ? booking.formatDepartureTime(dateFormatter) : 'Chưa rõ'}
                                                     <c:if test="${booking.formatArrivalTime(dateFormatter) != null}">
@@ -142,9 +130,6 @@
                                                     </c:if>
                                                     <c:if test="${not empty booking.vehiclePlate}">
                                                         &middot; Xe ${booking.vehiclePlate}
-                                                    </c:if>
-                                                    <c:if test="${not empty booking.routeDurationLabel}">
-                                                        &middot; ~ ${booking.routeDurationLabel}
                                                     </c:if>
                                                 </small>
                                             </div>
@@ -225,8 +210,8 @@
                         <div class="modal fade" id="viewBookingModal${booking.bookingId}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered">
                                 <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Chi tiết đơn đặt chỗ ${bookingCode}</h5>
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Chi tiết đơn đặt chỗ #${booking.bookingId}</h5>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
@@ -306,7 +291,7 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
-                                            Bạn có chắc chắn muốn xóa đơn đặt chỗ <strong>${bookingCode}</strong>?
+                                            Bạn có chắc chắn muốn xóa đơn đặt chỗ <strong>#${booking.bookingId}</strong>?
                                             <br>Thao tác này không thể hoàn tác.
                                         </div>
                                         <div class="modal-footer">

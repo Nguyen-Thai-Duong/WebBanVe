@@ -38,7 +38,7 @@
     <link rel="icon" type="image/x-icon" href="${imgPath}/favicon/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese" rel="stylesheet" />
     <link rel="stylesheet" href="${vendorPath}/fonts/boxicons.css" />
     <link rel="stylesheet" href="${vendorPath}/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="${vendorPath}/css/theme-default.css" class="template-customizer-theme-css" />
@@ -112,7 +112,7 @@
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label class="form-label" for="fullName">Họ và tên</label>
-                                                <input type="text" class="form-control" id="fullName" name="fullName" value="${staff.fullName != null ? staff.fullName : ''}" pattern="[A-Za-zÀ-ỹà-ỹ\s'.-]{2,100}" title="Chỉ dùng chữ cái và khoảng trắng." required>
+                                                <input type="text" class="form-control" id="fullName" name="fullName" value="${staff.fullName != null ? staff.fullName : ''}" required>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label" for="email">Email</label>
@@ -120,7 +120,7 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label" for="phone">Điện thoại</label>
-                                                <input type="text" class="form-control" id="phone" name="phone" value="${staff.phoneNumber != null ? staff.phoneNumber : ''}" inputmode="numeric" pattern="\d{7,20}" title="Chỉ nhập chữ số." required>
+                                                <input type="text" class="form-control" id="phone" name="phone" value="${staff.phoneNumber != null ? staff.phoneNumber : ''}" required>
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label" for="status">Trạng thái</label>

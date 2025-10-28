@@ -33,13 +33,6 @@
     }
     Trip trip = (Trip) request.getAttribute("trip");
     DateTimeFormatter formFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-    String arrivalDisplay = (trip != null && trip.getArrivalTime() != null)
-        ? trip.getArrivalTime().format(formFormatter)
-        : "";
-    Integer maxTripsPerRoute = (Integer) request.getAttribute("maxTripsPerRoute");
-    if (maxTripsPerRoute == null) {
-        maxTripsPerRoute = Integer.valueOf(5);
-    }
 %>
 <!DOCTYPE html>
 <html lang="vi" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="<%= assetBase %>/" data-template="vertical-menu-template-free">
@@ -50,7 +43,7 @@
     <link rel="icon" type="image/x-icon" href="<%= imgPath %>/favicon/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese" rel="stylesheet" />
     <link rel="stylesheet" href="<%= vendorPath %>/fonts/boxicons.css" />
     <link rel="stylesheet" href="<%= vendorPath %>/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="<%= vendorPath %>/css/theme-default.css" class="template-customizer-theme-css" />
@@ -110,25 +103,13 @@
                                                 <option value="" disabled>Chọn tuyến</option>
                                                 <% Integer currentRouteId = trip.getRoute() != null ? trip.getRoute().getRouteId() : null;
                                                    if (routes != null) {
-                                                       for (Route route : routes) {
-                                                           int tripCount = route.getTripCount() != null ? route.getTripCount() : 0;
-                                                           boolean routeFull = maxTripsPerRoute != null && tripCount >= maxTripsPerRoute;
-                                                           boolean isCurrentRoute = currentRouteId != null && currentRouteId.equals(route.getRouteId());
-                                                           boolean disableOption = routeFull && !isCurrentRoute;
-                                                           StringBuilder label = new StringBuilder();
-                                                           label.append(route.getOrigin()).append(" → ").append(route.getDestination());
-                                                           label.append(" (").append(tripCount).append('/').append(maxTripsPerRoute).append(')');
-                                                           if (routeFull) {
-                                                               label.append(" - Đã đủ chuyến");
-                                                           }
-                                                %>
-                                                <option value="<%= route.getRouteId() %>" <%= isCurrentRoute ? "selected" : "" %><%= disableOption ? " disabled" : "" %>>
-                                                    <%= label.toString() %>
+                                                       for (Route route : routes) { %>
+                                                <option value="<%= route.getRouteId() %>" <%= currentRouteId != null && currentRouteId.equals(route.getRouteId()) ? "selected" : "" %>>
+                                                    <%= route.getOrigin() %> → <%= route.getDestination() %>
                                                 </option>
                                                 <%     }
                                                    } %>
                                             </select>
-                                            <div class="form-text">Không thể chuyển sang tuyến đã đạt đủ <%= maxTripsPerRoute %> chuyến.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="vehicleId">Xe</label>
@@ -160,16 +141,15 @@
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="price">Giá vé (VND)</label>
-                                            <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="<%= trip.getPrice() != null ? trip.getPrice().toPlainString() : "0" %>" inputmode="decimal" pattern="\d+(\.\d{1,2})?" title="Chỉ nhập số tiền hợp lệ." required>
+                                            <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="<%= trip.getPrice() != null ? trip.getPrice().toPlainString() : "0" %>" required>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="departureTime">Giờ khởi hành</label>
                                             <input type="datetime-local" class="form-control" id="departureTime" name="departureTime" value="<%= trip.getDepartureTime() != null ? trip.getDepartureTime().format(formFormatter) : "" %>" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label" for="arrivalTimeDisplay">Giờ đến (tự tính)</label>
-                                            <input type="text" class="form-control" id="arrivalTimeDisplay" value="<%= arrivalDisplay.isEmpty() ? "Sẽ tự tính sau khi lưu" : arrivalDisplay %>" disabled>
-                                            <div class="form-text">Giờ đến được tính từ tuyến và giờ khởi hành hiện tại.</div>
+                                            <label class="form-label" for="arrivalTime">Giờ đến</label>
+                                            <input type="datetime-local" class="form-control" id="arrivalTime" name="arrivalTime" value="<%= trip.getArrivalTime() != null ? trip.getArrivalTime().format(formFormatter) : "" %>">
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label" for="tripStatus">Trạng thái</label>

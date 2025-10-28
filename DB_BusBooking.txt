@@ -72,11 +72,7 @@ CREATE TABLE ROUTE (
     RouteID INT PRIMARY KEY IDENTITY(1,1),
     Origin NVARCHAR(100) NOT NULL,
     Destination NVARCHAR(100) NOT NULL,
-	Distance DECIMAL(10, 2), -- Có thể NULL
-	-- THÊM MỚI:
-	DurationMinutes INT CHECK (DurationMinutes >= 0),
-	RouteStatus NVARCHAR(20) NOT NULL DEFAULT 'Active' CHECK (RouteStatus IN ('Active', 'Inactive')),
-	---
+    Distance DECIMAL(10, 2), -- Có thể NULL
     UNIQUE (Origin, Destination)
 );
 

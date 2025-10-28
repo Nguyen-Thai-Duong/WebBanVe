@@ -9,15 +9,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import model.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import util.InputValidator;
 
 /**
  * Controller responsible for route management flows.
@@ -27,10 +23,6 @@ public class RouteController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteController.class);
-    private static final int MAX_TRIPS_PER_ROUTE = 5;
-    private static final String DEFAULT_ROUTE_STATUS = "Active";
-    private static final List<String> ROUTE_STATUS_OPTIONS = Collections.unmodifiableList(Arrays.asList("Active", "Inactive"));
-    private static final Set<String> ROUTE_STATUS_SET = Collections.unmodifiableSet(new HashSet<>(ROUTE_STATUS_OPTIONS));
 
     private final RouteDAO routeDAO = new RouteDAO();
 
@@ -67,7 +59,6 @@ public class RouteController extends HttpServlet {
             routes = Collections.emptyList();
         }
         request.setAttribute("routes", routes);
-        request.setAttribute("maxTripsPerRoute", MAX_TRIPS_PER_ROUTE);
         request.setAttribute("activeMenu", "routes");
         forward(request, response, "/WEB-INF/admin/routes/route-list.jsp");
     }
@@ -148,8 +139,6 @@ public class RouteController extends HttpServlet {
         route.setOrigin(trim(request.getParameter("origin")));
         route.setDestination(trim(request.getParameter("destination")));
         route.setDistance(parseDecimal(request.getParameter("distance")));
-        route.setDurationMinutes(parseDurationMinutes(request.getParameter("durationMinutes")));
-        route.setRouteStatus(normalizeRouteStatus(request.getParameter("routeStatus")));
         return route;
     }
 
@@ -169,21 +158,7 @@ public class RouteController extends HttpServlet {
         }
         String distanceRaw = trim(request.getParameter("distance"));
         if (distanceRaw != null && route.getDistance() == null) {
-            setFlash(request.getSession(), "routeMessage", "Khoảng cách phải là số nguyên không âm.", "danger");
-            return false;
-        }
-        String durationRaw = trim(request.getParameter("durationMinutes"));
-        if (durationRaw != null && route.getDurationMinutes() == null) {
-            setFlash(request.getSession(), "routeMessage", "Thời gian tuyến đường phải là số phút hợp lệ.", "danger");
-            return false;
-        }
-        if (route.getDurationMinutes() != null && route.getDurationMinutes() < 0) {
-            setFlash(request.getSession(), "routeMessage", "Thời gian tuyến đường không được nhỏ hơn 0.", "danger");
-            return false;
-        }
-        String statusRaw = trim(request.getParameter("routeStatus"));
-        if (statusRaw != null && !ROUTE_STATUS_SET.contains(statusRaw)) {
-            setFlash(request.getSession(), "routeMessage", "Trạng thái tuyến đường không hợp lệ.", "danger");
+            setFlash(request.getSession(), "routeMessage", "Khoảng cách không hợp lệ. Vui lòng nhập số hợp lệ.", "danger");
             return false;
         }
         return true;
@@ -191,9 +166,6 @@ public class RouteController extends HttpServlet {
 
     private void prepareRouteForm(HttpServletRequest request, Route route) {
         Route resolvedRoute = route != null ? route : new Route();
-        if (resolvedRoute.getRouteStatus() == null || resolvedRoute.getRouteStatus().isBlank()) {
-            resolvedRoute.setRouteStatus(DEFAULT_ROUTE_STATUS);
-        }
         request.setAttribute("route", resolvedRoute);
         request.setAttribute("activeMenu", "routes");
         request.setAttribute("formAction", resolvedRoute.getRouteId() != null
@@ -201,7 +173,6 @@ public class RouteController extends HttpServlet {
                 : request.getContextPath() + "/admin/routes/new");
         request.setAttribute("submitLabel", resolvedRoute.getRouteId() != null ? "Cập nhật" : "Tạo tuyến");
         request.setAttribute("cancelHref", request.getContextPath() + "/admin/routes");
-        request.setAttribute("routeStatuses", ROUTE_STATUS_OPTIONS);
     }
 
     private void setFlash(HttpSession session, String key, String message, String type) {
@@ -234,38 +205,13 @@ public class RouteController extends HttpServlet {
         if (value == null || value.isBlank()) {
             return null;
         }
-        String trimmed = value.trim();
-        if (!InputValidator.isDigitsOnly(trimmed)) {
-            LOGGER.warn("Invalid distance value (non integer digits): {}", value);
-            return null;
-        }
         try {
-            return new BigDecimal(trimmed);
+            BigDecimal decimal = new BigDecimal(value.trim());
+            return decimal.signum() >= 0 ? decimal : null;
         } catch (NumberFormatException ex) {
             LOGGER.warn("Failed to parse decimal value: {}", value);
             return null;
         }
-    }
-
-    private Integer parseDurationMinutes(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            int minutes = Integer.parseInt(value.trim());
-            return minutes >= 0 ? minutes : null;
-        } catch (NumberFormatException ex) {
-            LOGGER.warn("Failed to parse route duration value: {}", value);
-            return null;
-        }
-    }
-
-    private String normalizeRouteStatus(String status) {
-        String trimmed = trim(status);
-        if (trimmed == null) {
-            return DEFAULT_ROUTE_STATUS;
-        }
-        return ROUTE_STATUS_SET.contains(trimmed) ? trimmed : DEFAULT_ROUTE_STATUS;
     }
 
     @Override

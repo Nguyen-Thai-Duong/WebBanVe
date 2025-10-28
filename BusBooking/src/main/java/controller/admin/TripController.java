@@ -1,6 +1,5 @@
 package controller.admin;
 
-import DAO.RouteDAO;
 import DAO.TripDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -19,7 +18,6 @@ import model.Route;
 import model.Trip;
 import model.User;
 import model.Vehicle;
-import util.InputValidator;
 
 /**
  * Servlet controller for Trip CRUD in the admin module.
@@ -31,11 +29,8 @@ public class TripController extends HttpServlet {
     private static final DateTimeFormatter FORM_INPUT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     private static final DateTimeFormatter TABLE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String[] TRIP_STATUSES = {"Scheduled", "Departed", "Arrived", "Delayed", "Cancelled"};
-    private static final String ACTIVE_ROUTE_STATUS = "Active";
-    private static final int MAX_TRIPS_PER_ROUTE = 5;
 
     private final TripDAO tripDAO = new TripDAO();
-    private final RouteDAO routeDAO = new RouteDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -86,17 +81,8 @@ public class TripController extends HttpServlet {
 
     private void handleCreate(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Trip trip = buildTripFromRequest(request);
-        if (trip.getPrice() == null) {
-            setFlash(request.getSession(), "danger", "Giá vé phải là số hợp lệ.");
-            response.sendRedirect(request.getContextPath() + "/admin/trips/new");
-            return;
-        }
         if (!isValidTripData(trip)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
-            response.sendRedirect(request.getContextPath() + "/admin/trips/new");
-            return;
-        }
-        if (!enrichTripWithRoute(request, trip)) {
             response.sendRedirect(request.getContextPath() + "/admin/trips/new");
             return;
         }
@@ -117,17 +103,8 @@ public class TripController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/trips");
             return;
         }
-        if (trip.getPrice() == null) {
-            setFlash(request.getSession(), "danger", "Giá vé phải là số hợp lệ.");
-            response.sendRedirect(request.getContextPath() + "/admin/trips/edit?tripId=" + trip.getTripId());
-            return;
-        }
         if (!isValidTripData(trip)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
-            response.sendRedirect(request.getContextPath() + "/admin/trips/edit?tripId=" + trip.getTripId());
-            return;
-        }
-        if (!enrichTripWithRoute(request, trip)) {
             response.sendRedirect(request.getContextPath() + "/admin/trips/edit?tripId=" + trip.getTripId());
             return;
         }
@@ -172,6 +149,7 @@ public class TripController extends HttpServlet {
         trip.setOperator(operator);
 
         trip.setDepartureTime(parseDateTime(request.getParameter("departureTime")));
+        trip.setArrivalTime(parseDateTime(request.getParameter("arrivalTime")));
         trip.setPrice(parseBigDecimal(request.getParameter("price")));
         trip.setTripStatus(defaultIfBlank(request.getParameter("tripStatus"), "Scheduled"));
 
@@ -188,7 +166,6 @@ public class TripController extends HttpServlet {
         request.setAttribute("operators", operators);
         request.setAttribute("tripStatuses", TRIP_STATUSES);
         request.setAttribute("activeMenu", "trips");
-        request.setAttribute("maxTripsPerRoute", MAX_TRIPS_PER_ROUTE);
     }
 
     private void setFlash(HttpSession session, String type, String message) {
@@ -231,16 +208,8 @@ public class TripController extends HttpServlet {
     }
 
     private BigDecimal parseBigDecimal(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        String trimmed = value.trim();
-        if (!InputValidator.isValidMonetaryAmount(trimmed)) {
-            return null;
-        }
         try {
-            BigDecimal amount = new BigDecimal(trimmed);
-            return amount.signum() >= 0 ? amount : null;
+            return value != null && !value.isBlank() ? new BigDecimal(value) : null;
         } catch (NumberFormatException ex) {
             return null;
         }
@@ -262,46 +231,7 @@ public class TripController extends HttpServlet {
                 && trip.getVehicle() != null && trip.getVehicle().getVehicleId() != null
                 && trip.getOperator() != null && trip.getOperator().getUserId() != null
                 && trip.getDepartureTime() != null
-        && trip.getPrice() != null && trip.getPrice().signum() >= 0;
-    }
-
-    private boolean enrichTripWithRoute(HttpServletRequest request, Trip trip) {
-        Integer routeId = trip.getRoute() != null ? trip.getRoute().getRouteId() : null;
-        if (routeId == null) {
-            setFlash(request.getSession(), "danger", "Vui lòng chọn tuyến đường hợp lệ.");
-            return false;
-        }
-        Route selectedRoute = routeDAO.findById(routeId);
-        if (selectedRoute == null) {
-            setFlash(request.getSession(), "danger", "Không tìm thấy tuyến đường đã chọn.");
-            return false;
-        }
-        int scheduledTrips = tripDAO.countTripsByRoute(routeId, trip.getTripId());
-        if (scheduledTrips >= MAX_TRIPS_PER_ROUTE) {
-            setFlash(request.getSession(), "danger", "Tuyến đường đã có đủ " + MAX_TRIPS_PER_ROUTE + " chuyến.");
-            return false;
-        }
-        if (selectedRoute.getRouteStatus() != null && !ACTIVE_ROUTE_STATUS.equalsIgnoreCase(selectedRoute.getRouteStatus())) {
-            setFlash(request.getSession(), "danger", "Tuyến đường đang tạm ngưng. Vui lòng chọn tuyến khác.");
-            return false;
-        }
-        Integer durationMinutes = selectedRoute.getDurationMinutes();
-        if (durationMinutes == null) {
-            setFlash(request.getSession(), "danger", "Tuyến đường chưa có thời gian di chuyển. Vui lòng cập nhật trước khi lập chuyến.");
-            return false;
-        }
-        if (durationMinutes <= 0) {
-            setFlash(request.getSession(), "danger", "Thời gian di chuyển của tuyến phải lớn hơn 0 phút.");
-            return false;
-        }
-        if (trip.getDepartureTime() == null) {
-            setFlash(request.getSession(), "danger", "Vui lòng nhập giờ khởi hành hợp lệ.");
-            return false;
-        }
-        trip.setRoute(selectedRoute);
-        selectedRoute.setTripCount(scheduledTrips);
-        trip.setArrivalTime(trip.getDepartureTime().plusMinutes(durationMinutes));
-        return true;
+                && trip.getPrice() != null;
     }
 
     private String defaultIfBlank(String value, String defaultValue) {
