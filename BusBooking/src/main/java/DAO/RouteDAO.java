@@ -11,6 +11,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import model.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,11 +22,15 @@ import org.slf4j.LoggerFactory;
 public class RouteDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteDAO.class);
+    private static final Set<String> ALLOWED_STATUSES = Set.of("Active", "Inactive");
 
-    private static final String BASE_SELECT = "SELECT RouteID, Origin, Destination, Distance FROM ROUTE";
+    private static final String BASE_SELECT = "SELECT r.RouteID, r.Origin, r.Destination, r.Distance, "
+            + "r.DurationMinutes, r.RouteStatus, COALESCE(tc.TotalTrips, 0) AS TripCount "
+            + "FROM ROUTE r LEFT JOIN (SELECT RouteID, COUNT(*) AS TotalTrips FROM TRIP GROUP BY RouteID) tc "
+            + "ON r.RouteID = tc.RouteID";
 
     public List<Route> findAll() {
-        String sql = BASE_SELECT + " ORDER BY Origin, Destination";
+        String sql = BASE_SELECT + " ORDER BY r.Origin, r.Destination";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
@@ -47,7 +52,7 @@ public class RouteDAO {
     }
 
     public Route findById(int routeId) {
-        String sql = BASE_SELECT + " WHERE RouteID = ?";
+    String sql = BASE_SELECT + " WHERE r.RouteID = ?";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
@@ -69,7 +74,7 @@ public class RouteDAO {
     }
 
     public boolean insert(Route route) {
-        String sql = "INSERT INTO ROUTE (Origin, Destination, Distance) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO ROUTE (Origin, Destination, Distance, DurationMinutes, RouteStatus) VALUES (?, ?, ?, ?, ?)";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
@@ -80,7 +85,9 @@ public class RouteDAO {
                 int idx = 1;
                 ps.setString(idx++, route.getOrigin());
                 ps.setString(idx++, route.getDestination());
-                setNullableDecimal(ps, idx, route.getDistance());
+                setNullableDecimal(ps, idx++, route.getDistance());
+                setNullableInteger(ps, idx++, route.getDurationMinutes());
+                ps.setString(idx, resolveRouteStatus(route.getRouteStatus()));
                 int affected = ps.executeUpdate();
                 if (affected > 0) {
                     try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -101,7 +108,7 @@ public class RouteDAO {
         if (route.getRouteId() == null) {
             throw new IllegalArgumentException("Route ID is required for update");
         }
-        String sql = "UPDATE ROUTE SET Origin = ?, Destination = ?, Distance = ? WHERE RouteID = ?";
+        String sql = "UPDATE ROUTE SET Origin = ?, Destination = ?, Distance = ?, DurationMinutes = ?, RouteStatus = ? WHERE RouteID = ?";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
@@ -113,6 +120,8 @@ public class RouteDAO {
                 ps.setString(idx++, route.getOrigin());
                 ps.setString(idx++, route.getDestination());
                 setNullableDecimal(ps, idx++, route.getDistance());
+                setNullableInteger(ps, idx++, route.getDurationMinutes());
+                ps.setString(idx++, resolveRouteStatus(route.getRouteStatus()));
                 ps.setInt(idx, route.getRouteId());
                 return ps.executeUpdate() > 0;
             }
@@ -146,6 +155,11 @@ public class RouteDAO {
         route.setOrigin(rs.getString("Origin"));
         route.setDestination(rs.getString("Destination"));
         route.setDistance(rs.getBigDecimal("Distance"));
+        int duration = rs.getInt("DurationMinutes");
+        boolean durationIsNull = rs.wasNull();
+        route.setDurationMinutes(durationIsNull ? null : duration);
+        route.setRouteStatus(resolveRouteStatus(rs.getString("RouteStatus")));
+        route.setTripCount(rs.getInt("TripCount"));
         return route;
     }
 
@@ -155,5 +169,21 @@ public class RouteDAO {
         } else {
             ps.setNull(index, Types.DECIMAL);
         }
+    }
+
+    private void setNullableInteger(PreparedStatement ps, int index, Integer value) throws SQLException {
+        if (value != null) {
+            ps.setInt(index, value);
+        } else {
+            ps.setNull(index, Types.INTEGER);
+        }
+    }
+
+    private String resolveRouteStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return "Active";
+        }
+        String normalized = status.trim();
+        return ALLOWED_STATUSES.contains(normalized) ? normalized : "Active";
     }
 }

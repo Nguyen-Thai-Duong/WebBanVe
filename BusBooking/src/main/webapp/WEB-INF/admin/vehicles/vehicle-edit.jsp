@@ -26,7 +26,7 @@
 </c:if>
 
 <c:set var="vehicle" value="${requestScope.vehicle}" />
-<c:set var="staffOperators" value="${requestScope.staffOperators}" />
+<c:set var="busOperators" value="${requestScope.busOperators}" />
 <c:set var="dateTimeFormatter" value="${requestScope.dateTimeFormatter}" />
 <c:set var="currentOperatorCode" value="${vehicle != null && vehicle.operator != null ? vehicle.operator.employeeCode : ''}" />
 <c:set var="currentStatus" value="${vehicle != null && not empty vehicle.vehicleStatus ? vehicle.vehicleStatus : 'Available'}" />
@@ -127,11 +127,11 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label" for="operatorCode">Người phụ trách</label>
+                                                <label class="form-label" for="operatorCode">Người phụ trách (Bus Operator)</label>
                                                 <select class="form-select" id="operatorCode" name="operatorCode" required>
-                                                    <option value="" disabled<c:if test="${empty currentOperatorCode}"> selected</c:if>>-- Chọn nhân viên phụ trách --</option>
-                                                    <c:forEach var="staff" items="${staffOperators}">
-                                                        <option value="${staff.employeeCode}"<c:if test="${staff.employeeCode eq currentOperatorCode}"> selected</c:if>>${staff.fullName} (${staff.employeeCode})</option>
+                                                    <option value="" disabled<c:if test="${empty currentOperatorCode}"> selected</c:if>>-- Chọn bus operator phụ trách --</option>
+                                                    <c:forEach var="operator" items="${busOperators}">
+                                                        <option value="${operator.employeeCode}"<c:if test="${operator.employeeCode eq currentOperatorCode}"> selected</c:if>>${operator.fullName} (${operator.employeeCode})</option>
                                                     </c:forEach>
                                                 </select>
                                             </div>

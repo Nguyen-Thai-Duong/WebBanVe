@@ -20,6 +20,10 @@
 <c:set var="activeMenu" value="routes" scope="request" />
 <c:set var="navbarSearchPlaceholder" value="Tìm kiếm tuyến đường..." scope="request" />
 <c:set var="navbarSearchAriaLabel" value="Tìm kiếm tuyến đường" scope="request" />
+<c:set var="maxTripsPerRoute" value="${requestScope.maxTripsPerRoute}" />
+<c:if test="${empty maxTripsPerRoute}">
+    <c:set var="maxTripsPerRoute" value="5" />
+</c:if>
 
 <!DOCTYPE html>
 <html lang="vi" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="${assetBase}/" data-template="vertical-menu-template-free">
@@ -68,7 +72,7 @@
                         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
                                 <h5 class="card-title mb-0">Tổng quan tuyến đường</h5>
-                                <small class="text-muted">Có <strong>${fn:length(routes)}</strong> tuyến đường đã cấu hình.</small>
+                                <small class="text-muted">Có <strong>${fn:length(routes)}</strong> tuyến đường đã cấu hình. Mỗi tuyến tối đa ${maxTripsPerRoute} chuyến.</small>
                             </div>
                         </div>
                         <div class="table-responsive">
@@ -78,16 +82,24 @@
                                     <th>ID</th>
                                     <th>Tuyến</th>
                                     <th>Khoảng cách (km)</th>
+                                    <th>Thời gian (phút)</th>
+                                    <th>Số chuyến</th>
+                                    <th>Trạng thái</th>
                                     <th class="text-end">Thao tác</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <c:if test="${empty routes}">
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">Chưa có tuyến đường nào.</td>
+                                        <td colspan="7" class="text-center text-muted py-4">Chưa có tuyến đường nào.</td>
                                     </tr>
                                 </c:if>
                                 <c:forEach var="route" items="${routes}">
+                                    <c:set var="tripCount" value="${route.tripCount}" />
+                                    <c:if test="${empty tripCount}">
+                                        <c:set var="tripCount" value="0" />
+                                    </c:if>
+                                    <c:set var="routeFull" value="${tripCount >= maxTripsPerRoute}" />
                                     <tr>
                                         <td><strong>#${route.routeId}</strong></td>
                                         <td>
@@ -102,6 +114,28 @@
                                                     Chưa cập nhật
                                                 </c:otherwise>
                                             </c:choose>
+                                        </td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${route.durationMinutes != null}">
+                                                    ${route.durationMinutes}
+                                                </c:when>
+                                                <c:otherwise>
+                                                    Chưa cập nhật
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-label-${routeFull ? 'danger' : 'info'}">${tripCount}/${maxTripsPerRoute}</span>
+                                        </td>
+                                        <td>
+                                            <c:set var="routeActive" value="${route.routeStatus eq 'Active'}" />
+                                            <span class="badge bg-label-${routeActive ? 'success' : 'secondary'}">
+                                                <c:choose>
+                                                    <c:when test="${routeActive}">Đang hoạt động</c:when>
+                                                    <c:otherwise>Tạm ngưng</c:otherwise>
+                                                </c:choose>
+                                            </span>
                                         </td>
                                         <td class="text-end">
                                             <a class="btn btn-sm btn-icon btn-primary" href="${contextPath}/admin/routes/edit?routeId=${route.routeId}">

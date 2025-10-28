@@ -14,6 +14,7 @@ import java.util.List;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.InputValidator;
 import util.PasswordUtils;
 
 @WebServlet(name = "OperatorController", urlPatterns = {"/admin/operators", "/admin/operators/new", "/admin/operators/edit"})
@@ -98,6 +99,10 @@ public class OperatorController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/operators/new");
             return;
         }
+        if (!validateOperatorFields(request, operator)) {
+            response.sendRedirect(request.getContextPath() + "/admin/operators/new");
+            return;
+        }
         boolean inserted = operatorDAO.insert(operator);
         setFlash(request.getSession(), "operatorMessage", inserted ? "Tạo tài khoản thành công." : "Không thể tạo tài khoản.", inserted ? "success" : "danger");
         response.sendRedirect(request.getContextPath() + "/admin/operators");
@@ -114,6 +119,10 @@ public class OperatorController extends HttpServlet {
         operator.setUserId(userId);
         if (!isValidOperator(operator, false)) {
             setFlash(request.getSession(), "operatorMessage", "Vui lòng nhập đầy đủ thông tin bắt buộc.", "danger");
+            response.sendRedirect(request.getContextPath() + "/admin/operators/edit?id=" + userId);
+            return;
+        }
+        if (!validateOperatorFields(request, operator)) {
             response.sendRedirect(request.getContextPath() + "/admin/operators/edit?id=" + userId);
             return;
         }
@@ -188,6 +197,18 @@ public class OperatorController extends HttpServlet {
                 && operator.getEmail() != null && !operator.getEmail().isBlank()
                 && operator.getPhoneNumber() != null && !operator.getPhoneNumber().isBlank()
                 && passwordReady;
+    }
+
+    private boolean validateOperatorFields(HttpServletRequest request, User operator) {
+        if (!InputValidator.isAlphabeticName(operator.getFullName())) {
+            setFlash(request.getSession(), "operatorMessage", "Họ và tên chỉ được chứa chữ cái và khoảng trắng.", "danger");
+            return false;
+        }
+        if (!InputValidator.isDigitsOnly(operator.getPhoneNumber())) {
+            setFlash(request.getSession(), "operatorMessage", "Số điện thoại chỉ được chứa chữ số.", "danger");
+            return false;
+        }
+        return true;
     }
 
     private void prepareOperatorForm(HttpServletRequest request, User operator) {

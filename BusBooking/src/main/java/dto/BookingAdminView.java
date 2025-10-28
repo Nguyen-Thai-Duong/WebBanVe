@@ -26,6 +26,8 @@ public class BookingAdminView {
     private String routeOrigin;
     private String routeDestination;
     private String vehiclePlate;
+    private Integer routeDurationMinutes;
+    private String routeStatus;
 
     public Integer getBookingId() {
         return bookingId;
@@ -171,6 +173,22 @@ public class BookingAdminView {
         this.vehiclePlate = vehiclePlate;
     }
 
+    public Integer getRouteDurationMinutes() {
+        return routeDurationMinutes;
+    }
+
+    public void setRouteDurationMinutes(Integer routeDurationMinutes) {
+        this.routeDurationMinutes = routeDurationMinutes;
+    }
+
+    public String getRouteStatus() {
+        return routeStatus;
+    }
+
+    public void setRouteStatus(String routeStatus) {
+        this.routeStatus = routeStatus;
+    }
+
     public String formatBookingDate(DateTimeFormatter formatter) {
         return formatDate(bookingDate, formatter);
     }
@@ -185,6 +203,25 @@ public class BookingAdminView {
 
     public String formatTtlExpiry(DateTimeFormatter formatter) {
         return formatDate(ttlExpiry, formatter);
+    }
+
+    public String getFormattedCode() {
+        if (bookingId == null) {
+            return null;
+        }
+        return String.format("BK-%05d", bookingId);
+    }
+
+    public String getRouteDurationLabel() {
+        if (routeDurationMinutes == null) {
+            return null;
+        }
+        int hours = routeDurationMinutes / 60;
+        int minutes = routeDurationMinutes % 60;
+        if (hours > 0) {
+            return String.format("%d giờ %d phút", hours, minutes);
+        }
+        return String.format("%d phút", minutes);
     }
 
     private String formatDate(LocalDateTime dateTime, DateTimeFormatter formatter) {

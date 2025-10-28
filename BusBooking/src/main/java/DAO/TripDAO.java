@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import model.Route;
 import model.Trip;
 import model.User;
@@ -25,11 +25,11 @@ import model.Vehicle;
  */
 public class TripDAO {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TripDAO.class);
+    private static final Logger LOGGER = Logger.getLogger(TripDAO.class.getName());
 
     private static final String BASE_SELECT = "SELECT "
-            + "t.TripID, t.RouteID, t.DepartureTime, t.ArrivalTime, t.Price, t.VehicleID, t.OperatorID, t.TripStatus, "
-            + "r.Origin, r.Destination, r.Distance, "
+        + "t.TripID, t.RouteID, t.DepartureTime, t.ArrivalTime, t.Price, t.VehicleID, t.OperatorID, t.TripStatus, "
+        + "r.Origin, r.Destination, r.Distance, r.DurationMinutes, r.RouteStatus, "
             + "v.LicensePlate, v.Model, v.Capacity, "
             + "u.FullName AS OperatorName, u.Email AS OperatorEmail, u.EmployeeCode "
             + "FROM TRIP t "
@@ -42,7 +42,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading trips");
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading trips");
                 return Collections.emptyList();
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
@@ -54,7 +54,7 @@ public class TripDAO {
             return trips;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load trips", ex);
+            LOGGER.log(Level.SEVERE, "Failed to load trips", ex);
             return Collections.emptyList();
         }
     }
@@ -64,7 +64,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading trip id {}", tripId);
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading trip id {0}", tripId);
                 return null;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -76,7 +76,7 @@ public class TripDAO {
             }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to find trip with id {}", tripId, ex);
+            LOGGER.log(Level.SEVERE, "Failed to find trip with id " + tripId, ex);
         }
         return null;
     }
@@ -87,7 +87,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when inserting trip");
+                LOGGER.log(Level.SEVERE, "Database connection is null when inserting trip");
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -103,7 +103,7 @@ public class TripDAO {
             return affected > 0;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to insert trip", ex);
+            LOGGER.log(Level.SEVERE, "Failed to insert trip", ex);
             return false;
         }
     }
@@ -117,7 +117,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when updating trip id {}", trip.getTripId());
+                LOGGER.log(Level.SEVERE, "Database connection is null when updating trip id {0}", trip.getTripId());
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -126,7 +126,7 @@ public class TripDAO {
             return ps.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to update trip with id {}", trip.getTripId(), ex);
+            LOGGER.log(Level.SEVERE, "Failed to update trip with id " + trip.getTripId(), ex);
             return false;
         }
     }
@@ -136,7 +136,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when deleting trip id {}", tripId);
+                LOGGER.log(Level.SEVERE, "Database connection is null when deleting trip id {0}", tripId);
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -144,17 +144,20 @@ public class TripDAO {
             return ps.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to delete trip with id {}", tripId, ex);
+            LOGGER.log(Level.SEVERE, "Failed to delete trip with id " + tripId, ex);
             return false;
         }
     }
 
     public List<Route> findRoutes() {
-        String sql = "SELECT RouteID, Origin, Destination, Distance FROM ROUTE ORDER BY Origin, Destination";
+        String sql = "SELECT r.RouteID, r.Origin, r.Destination, r.Distance, r.DurationMinutes, r.RouteStatus, "
+                + "COALESCE(tc.TotalTrips, 0) AS TripCount FROM ROUTE r "
+                + "LEFT JOIN (SELECT RouteID, COUNT(*) AS TotalTrips FROM TRIP GROUP BY RouteID) tc "
+                + "ON r.RouteID = tc.RouteID ORDER BY r.Origin, r.Destination";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading routes");
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading routes");
                 return Collections.emptyList();
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
@@ -166,14 +169,44 @@ public class TripDAO {
                 route.setOrigin(rs.getString("Origin"));
                 route.setDestination(rs.getString("Destination"));
                 route.setDistance(rs.getBigDecimal("Distance"));
+                int duration = rs.getInt("DurationMinutes");
+                boolean durationIsNull = rs.wasNull();
+                route.setDurationMinutes(durationIsNull ? null : duration);
+                route.setRouteStatus(rs.getString("RouteStatus"));
+                route.setTripCount(rs.getInt("TripCount"));
                 routes.add(route);
             }
             return routes;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load routes", ex);
+            LOGGER.log(Level.SEVERE, "Failed to load routes", ex);
             return Collections.emptyList();
         }
+    }
+
+    public int countTripsByRoute(int routeId, Integer excludeTripId) {
+        String sql = "SELECT COUNT(*) FROM TRIP WHERE RouteID = ?" + (excludeTripId != null ? " AND TripID <> ?" : "");
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null when counting trips for route {0}", routeId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, routeId);
+                if (excludeTripId != null) {
+                    ps.setInt(2, excludeTripId);
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to count trips for route " + routeId, ex);
+        }
+        return 0;
     }
 
     public List<Vehicle> findVehicles() {
@@ -181,7 +214,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading vehicles");
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading vehicles");
                 return Collections.emptyList();
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
@@ -198,7 +231,7 @@ public class TripDAO {
             return vehicles;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load vehicles", ex);
+            LOGGER.log(Level.SEVERE, "Failed to load vehicles", ex);
             return Collections.emptyList();
         }
     }
@@ -209,7 +242,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading operators");
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading operators");
                 return Collections.emptyList();
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
@@ -226,7 +259,7 @@ public class TripDAO {
             return operators;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load bus operators", ex);
+            LOGGER.log(Level.SEVERE, "Failed to load bus operators", ex);
             return Collections.emptyList();
         }
     }
@@ -244,8 +277,10 @@ public class TripDAO {
     private Trip mapTrip(ResultSet rs) throws SQLException {
         Trip trip = new Trip();
         trip.setTripId(rs.getInt("TripID"));
-        trip.setDepartureTime(toLocalDateTime(rs.getTimestamp("DepartureTime")));
-        trip.setArrivalTime(toLocalDateTime(rs.getTimestamp("ArrivalTime")));
+        LocalDateTime departure = toLocalDateTime(rs.getTimestamp("DepartureTime"));
+        LocalDateTime arrival = toLocalDateTime(rs.getTimestamp("ArrivalTime"));
+        trip.setDepartureTime(departure);
+        trip.setArrivalTime(arrival);
         trip.setPrice(rs.getBigDecimal("Price"));
         trip.setTripStatus(rs.getString("TripStatus"));
 
@@ -254,6 +289,11 @@ public class TripDAO {
         route.setOrigin(rs.getString("Origin"));
         route.setDestination(rs.getString("Destination"));
         route.setDistance(rs.getBigDecimal("Distance"));
+        int duration = rs.getInt("DurationMinutes");
+        boolean durationIsNull = rs.wasNull();
+        route.setDurationMinutes(durationIsNull ? null : duration);
+        String routeStatus = rs.getString("RouteStatus");
+        route.setRouteStatus(routeStatus != null && !routeStatus.isBlank() ? routeStatus : "Active");
         trip.setRoute(route);
 
         Vehicle vehicle = new Vehicle();
@@ -269,6 +309,10 @@ public class TripDAO {
         operator.setEmail(rs.getString("OperatorEmail"));
         operator.setEmployeeCode(rs.getString("EmployeeCode"));
         trip.setOperator(operator);
+
+        if (trip.getArrivalTime() == null && route.getDurationMinutes() != null && departure != null) {
+            trip.setArrivalTime(departure.plusMinutes(route.getDurationMinutes()));
+        }
 
         return trip;
     }
@@ -290,7 +334,7 @@ public class TripDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading trips for operator {}", operatorId);
+                LOGGER.log(Level.SEVERE, "Database connection is null when loading trips for operator {0}", operatorId);
                 return Collections.emptyList();
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -308,7 +352,7 @@ public class TripDAO {
                 }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load upcoming trips for operator {}", operatorId, ex);
+            LOGGER.log(Level.SEVERE, "Failed to load upcoming trips for operator " + operatorId, ex);
             return Collections.emptyList();
         }
     }

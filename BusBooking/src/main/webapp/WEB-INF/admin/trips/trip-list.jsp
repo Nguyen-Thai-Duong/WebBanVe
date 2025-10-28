@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="app" tagdir="/WEB-INF/tags" %>
 
 <c:set var="trips" value="${requestScope.trips}" />
 <c:set var="tableFormatter" value="${requestScope.tableFormatter}" />
@@ -106,11 +107,9 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Tuyến</th>
-                                    <th>Giờ khởi hành</th>
-                                    <th>Giờ đến</th>
                                     <th>Giá vé</th>
                                     <th>Xe</th>
-                                    <th>Nhà xe</th>
+                                    <th>Người phụ trách</th>
                                     <th>Trạng thái</th>
                                     <th class="text-end">Thao tác</th>
                                 </tr>
@@ -118,27 +117,41 @@
                                 <tbody>
                                 <c:if test="${fn:length(trips) == 0}">
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">Chưa có chuyến đi nào.</td>
+                                        <td colspan="7" class="text-center text-muted py-4">Chưa có chuyến đi nào.</td>
                                     </tr>
                                 </c:if>
                                 <c:forEach var="trip" items="${trips}">
                                     <c:set var="viewId" value="viewTripModal${trip.tripId}" />
                                     <c:set var="deleteId" value="deleteTripModal${trip.tripId}" />
+                                    <c:set var="departureDisplay" value="${trip.formatDeparture(tableFormatter)}" />
+                                    <c:set var="arrivalDisplay" value="${trip.formatArrival(tableFormatter)}" />
+                                    <c:set var="hasDuration" value="${trip.durationMinutesTotal != null and trip.durationMinutesTotal >= 0}" />
                                     <tr>
                                         <td><strong>#${trip.tripId}</strong></td>
                                         <td>
                                             <c:choose>
                                                 <c:when test="${trip.route != null}">
-                                                    <span class="fw-semibold">${trip.route.origin} → ${trip.route.destination}</span>
+                                                    <div class="fw-semibold text-body">${trip.route.origin} → ${trip.route.destination}</div>
+                                                    <c:if test="${departureDisplay != null or arrivalDisplay != null}">
+                                                        <div class="text-muted small">
+                                                            <c:if test="${departureDisplay != null}">${departureDisplay}</c:if>
+                                                            <c:if test="${departureDisplay != null and arrivalDisplay != null}"> · đến </c:if>
+                                                            <c:if test="${arrivalDisplay != null}">${arrivalDisplay}</c:if>
+                                                        </div>
+                                                    </c:if>
+                                                    <c:if test="${trip.vehicle != null or hasDuration}">
+                                                        <div class="text-muted small">
+                                                            <c:if test="${trip.vehicle != null and hasDuration}">&nbsp;·&nbsp;</c:if>
+                                                            <c:if test="${hasDuration}">~ ${trip.durationHoursPart} giờ ${trip.durationMinutesPart} phút</c:if>
+                                                        </div>
+                                                    </c:if>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="text-muted">N/A</span>
                                                 </c:otherwise>
                                             </c:choose>
                                         </td>
-                                        <td>${trip.formatDeparture(tableFormatter) != null ? trip.formatDeparture(tableFormatter) : 'N/A'}</td>
-                                        <td>${trip.formatArrival(tableFormatter) != null ? trip.formatArrival(tableFormatter) : 'N/A'}</td>
-                                        <td>${trip.price != null ? trip.price.toPlainString() : '0'}</td>
+                                        <td><app:currency value="${trip.price}" /></td>
                                         <td>
                                             <c:choose>
                                                 <c:when test="${trip.vehicle != null}">
@@ -237,11 +250,11 @@
                                         </div>
                                         <div class="col-md-3">
                                             <small class="text-muted text-uppercase d-block">Giá vé</small>
-                                            <span class="fw-semibold text-warning">${trip.price != null ? trip.price.toPlainString() : '0'} VND</span>
+                                            <span class="fw-semibold text-warning"><app:currency value="${trip.price}" /></span>
                                         </div>
                                         <div class="col-md-3">
                                             <small class="text-muted text-uppercase d-block">Trạng thái</small>
-                                            <span class="badge bg-label-primary">${trip.tripStatus}</span>
+                                                    <span class="badge bg-label-primary">${trip.tripStatus}</span>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="border rounded-3 p-3 h-100">
