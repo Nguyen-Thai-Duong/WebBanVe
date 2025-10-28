@@ -1,0 +1,105 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
+<c:set var="booking" value="${requestScope.booking}" />
+<c:set var="tripOptions" value="${requestScope.tripOptions}" />
+<c:set var="customers" value="${requestScope.customers}" />
+<c:set var="bookingStatuses" value="${requestScope.bookingStatuses}" />
+<c:set var="seatStatuses" value="${requestScope.seatStatuses}" />
+<c:set var="ttlValue" value="${requestScope.ttlValue}" />
+<c:set var="dateFormatter" value="${requestScope.dateFormatter}" />
+<c:set var="formAction" value="${requestScope.formAction}" />
+<c:set var="submitLabel" value="${requestScope.submitLabel}" />
+<c:set var="cancelHref" value="${requestScope.cancelHref}" />
+
+<form action="${formAction}" method="post" class="needs-validation" novalidate>
+    <c:if test="${not empty booking.bookingId}">
+        <input type="hidden" name="bookingId" value="${booking.bookingId}" />
+    </c:if>
+    <div class="row g-3">
+        <div class="col-lg-6 col-md-12">
+            <label class="form-label" for="tripId">Chuyến đi</label>
+            <select class="form-select" id="tripId" name="tripId" required>
+                <option value="">-- Chọn chuyến đi --</option>
+                <c:forEach var="trip" items="${tripOptions}">
+                    <c:set var="optionLabel" value="${trip.routeLabel}" />
+                    <c:set var="formattedDeparture" value="${trip.formatDeparture(dateFormatter)}" />
+                    <c:set var="formattedArrival" value="${trip.formatArrival(dateFormatter)}" />
+                    <c:set var="vehicleLabel" value="${trip.vehicleLabel}" />
+                    <option value="${trip.tripId}"<c:if test="${not empty booking.tripId and booking.tripId eq trip.tripId}"> selected</c:if>>
+                        ${optionLabel}
+                        <c:if test="${not empty formattedDeparture}">
+                            &nbsp;-&nbsp;${formattedDeparture}
+                        </c:if>
+                        <c:if test="${not empty formattedArrival}">
+                            &nbsp;&rarr;&nbsp;${formattedArrival}
+                        </c:if>
+                        <c:if test="${not empty vehicleLabel}">
+                            &nbsp;(${vehicleLabel})
+                        </c:if>
+                    </option>
+                </c:forEach>
+            </select>
+            <div class="form-text">Hiển thị tuyến và thời gian khởi hành.</div>
+        </div>
+        <div class="col-lg-6 col-md-12">
+            <label class="form-label" for="customerId">Khách hàng (tùy chọn)</label>
+            <select class="form-select" id="customerId" name="customerId">
+                <option value="">-- Khách lẻ --</option>
+                <c:forEach var="customer" items="${customers}">
+                    <option value="${customer.userId}"<c:if test="${not empty booking.customerId and booking.customerId eq customer.userId}"> selected</c:if>>
+                        ${customer.fullName}
+                        <c:if test="${not empty customer.phoneNumber}">
+                            &nbsp;-&nbsp;${customer.phoneNumber}
+                        </c:if>
+                    </option>
+                </c:forEach>
+            </select>
+            <div class="form-text">Bỏ trống để ghi nhận khách lẻ.</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="guestPhone">Điện thoại khách lẻ</label>
+            <input type="text" class="form-control" id="guestPhone" name="guestPhone" value="${booking.guestPhoneNumber}" placeholder="Ví dụ: 0909xxxxxx" />
+            <div class="form-text">Bắt buộc nếu không chọn khách hàng.</div>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="guestEmail">Email khách lẻ</label>
+            <input type="email" class="form-control" id="guestEmail" name="guestEmail" value="${booking.guestEmail}" placeholder="guest@example.com" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="seatNumber">Số ghế</label>
+            <input type="text" class="form-control" id="seatNumber" name="seatNumber" value="${booking.seatNumber}" required />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="bookingStatus">Trạng thái đơn</label>
+            <select class="form-select" id="bookingStatus" name="bookingStatus" required>
+                <c:forEach var="status" items="${bookingStatuses}">
+                    <option value="${status}"<c:if test="${status eq booking.bookingStatus}"> selected</c:if>>${status}</option>
+                </c:forEach>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label" for="seatStatus">Trạng thái ghế</label>
+            <select class="form-select" id="seatStatus" name="seatStatus" required>
+                <c:forEach var="status" items="${seatStatuses}">
+                    <option value="${status}"<c:if test="${status eq booking.seatStatus}"> selected</c:if>>${status}</option>
+                </c:forEach>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="ttlExpiry">TTL giữ chỗ (tùy chọn)</label>
+            <input type="datetime-local" class="form-control" id="ttlExpiry" name="ttlExpiry" value="${ttlValue}" />
+            <div class="form-text">Thời hạn giữ ghế, dùng để tự động giải phóng nếu quá hạn.</div>
+        </div>
+        <c:if test="${not empty booking.bookingId}">
+            <div class="col-md-6">
+                <label class="form-label">Đặt lúc</label>
+                <input type="text" class="form-control" value="${booking.formatBookingDate(dateFormatter) != null ? booking.formatBookingDate(dateFormatter) : 'Chưa rõ'}" readonly />
+            </div>
+        </c:if>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <a class="btn btn-outline-secondary" href="${cancelHref}">Hủy</a>
+        <button type="submit" class="btn btn-primary">${submitLabel}</button>
+    </div>
+</form>
