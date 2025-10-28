@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.List;
 import model.Route;
 import model.Trip;
@@ -21,42 +22,57 @@ import model.Vehicle;
 /**
  * Servlet controller for Trip CRUD in the admin module.
  */
-@WebServlet(name = "TripController", urlPatterns = {"/admin/trips"})
+@WebServlet(name = "TripController", urlPatterns = {"/admin/trips", "/admin/trips/new", "/admin/trips/edit"})
 public class TripController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     private static final DateTimeFormatter FORM_INPUT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    private static final DateTimeFormatter TABLE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final String[] TRIP_STATUSES = {"Scheduled", "Departed", "Arrived", "Delayed", "Cancelled"};
 
     private final TripDAO tripDAO = new TripDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-    loadReferenceData(request);
-    List<Trip> trips = tripDAO.findAll();
-    request.setAttribute("trips", trips);
-    request.getRequestDispatcher("/WEB-INF/admin/trip-list.jsp").forward(request, response);
+        String path = request.getServletPath();
+        switch (path) {
+            case "/admin/trips":
+                List<Trip> trips = tripDAO.findAll();
+                if (trips == null) {
+                    trips = Collections.emptyList();
+                }
+                request.setAttribute("trips", trips);
+                request.setAttribute("tableFormatter", TABLE_FORMATTER);
+                request.setAttribute("activeMenu", "trips");
+                request.getRequestDispatcher("/WEB-INF/admin/trips/trip-list.jsp").forward(request, response);
+                break;
+            case "/admin/trips/new":
+                prepareTripForm(request, null);
+                request.getRequestDispatcher("/WEB-INF/admin/trips/trip-create.jsp").forward(request, response);
+                break;
+            case "/admin/trips/edit":
+                handleEditForm(request, response);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-        String action = request.getParameter("action");
-        if (action == null) {
-            response.sendRedirect(request.getContextPath() + "/admin/trips");
-            return;
-        }
-
-        switch (action) {
-            case "create":
+        String path = request.getServletPath();
+        switch (path) {
+            case "/admin/trips":
+                handleActionPost(request, response);
+                break;
+            case "/admin/trips/new":
                 handleCreate(request, response);
                 break;
-            case "update":
+            case "/admin/trips/edit":
                 handleUpdate(request, response);
-                break;
-            case "delete":
-                handleDelete(request, response);
                 break;
             default:
                 response.sendRedirect(request.getContextPath() + "/admin/trips");
@@ -67,7 +83,7 @@ public class TripController extends HttpServlet {
         Trip trip = buildTripFromRequest(request);
         if (!isValidTripData(trip)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
-            response.sendRedirect(request.getContextPath() + "/admin/trips");
+            response.sendRedirect(request.getContextPath() + "/admin/trips/new");
             return;
         }
         boolean created = tripDAO.insert(trip);
@@ -89,7 +105,7 @@ public class TripController extends HttpServlet {
         }
         if (!isValidTripData(trip)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
-            response.sendRedirect(request.getContextPath() + "/admin/trips");
+            response.sendRedirect(request.getContextPath() + "/admin/trips/edit?tripId=" + trip.getTripId());
             return;
         }
         boolean updated = tripDAO.update(trip);
@@ -140,18 +156,47 @@ public class TripController extends HttpServlet {
         return trip;
     }
 
-    private void loadReferenceData(HttpServletRequest request) {
+    private void prepareTripForm(HttpServletRequest request, Trip trip) {
         List<Route> routes = tripDAO.findRoutes();
         List<Vehicle> vehicles = tripDAO.findVehicles();
         List<User> operators = tripDAO.findOperators();
+        request.setAttribute("trip", trip);
         request.setAttribute("routes", routes);
         request.setAttribute("vehicles", vehicles);
         request.setAttribute("operators", operators);
+        request.setAttribute("tripStatuses", TRIP_STATUSES);
+        request.setAttribute("activeMenu", "trips");
     }
 
     private void setFlash(HttpSession session, String type, String message) {
         session.setAttribute("tripMessage", message);
         session.setAttribute("tripMessageType", type);
+    }
+
+    private void handleEditForm(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        Integer tripId = parseInteger(request.getParameter("tripId"));
+        if (tripId == null) {
+            setFlash(request.getSession(), "danger", "Thiếu mã chuyến đi cần chỉnh sửa.");
+            response.sendRedirect(request.getContextPath() + "/admin/trips");
+            return;
+        }
+        Trip trip = tripDAO.findById(tripId);
+        if (trip == null) {
+            setFlash(request.getSession(), "danger", "Không tìm thấy chuyến đi.");
+            response.sendRedirect(request.getContextPath() + "/admin/trips");
+            return;
+        }
+        prepareTripForm(request, trip);
+    request.getRequestDispatcher("/WEB-INF/admin/trips/trip-edit.jsp").forward(request, response);
+    }
+
+    private void handleActionPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String action = request.getParameter("action");
+        if ("delete".equals(action)) {
+            handleDelete(request, response);
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/trips");
+        }
     }
 
     private Integer parseInteger(String value) {

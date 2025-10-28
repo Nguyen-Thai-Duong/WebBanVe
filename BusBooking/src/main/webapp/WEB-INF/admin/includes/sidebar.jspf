@@ -1,14 +1,15 @@
 <%@ page pageEncoding="UTF-8" %>
-<% 
-    String activeMenu = (String) request.getAttribute("activeMenu");
-    if (activeMenu == null) {
-        activeMenu = "";
-    }
-%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
+<c:set var="contextPath" value="${pageContext.request.contextPath}" />
+<c:set var="activeMenuRaw" value="${requestScope.activeMenu}" />
+<c:set var="activeMenu" value="${empty activeMenuRaw ? '' : activeMenuRaw}" />
+<c:set var="activeMenuLower" value="${fn:toLowerCase(activeMenu)}" />
 <!-- Menu -->
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     <div class="app-brand demo">
-        <a href="<%= request.getContextPath() %>/admin/trips" class="app-brand-link">
+    <a href="${contextPath}/admin/trips" class="app-brand-link">
             <span class="app-brand-logo demo">
                 <svg
                     width="26"
@@ -72,8 +73,8 @@
     <div class="menu-inner-shadow"></div>
 
     <ul class="menu-inner py-1">
-        <li class="menu-item <%= "dashboard".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
-            <a href="<%= request.getContextPath() %>/admin/dashboard" class="menu-link">
+        <li class="menu-item ${activeMenuLower == 'dashboard' ? 'active' : ''}">
+            <a href="${contextPath}/admin/dashboard" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
                 <div data-i18n="Dashboard">Dashboard</div>
             </a>
@@ -83,16 +84,22 @@
             <span class="menu-header-text">Quản trị</span>
         </li>
 
-        <li class="menu-item <%= "trips".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
-            <a href="<%= request.getContextPath() %>/admin/trips" class="menu-link">
+        <li class="menu-item ${activeMenuLower == 'trips' ? 'active' : ''}">
+            <a href="${contextPath}/admin/trips" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-bus"></i>
                 <div data-i18n="Trips">Chuyến đi</div>
             </a>
         </li>
-        <li class="menu-item <%= "customers".equalsIgnoreCase(activeMenu) ? "active" : "" %>">
-            <a href="<%= request.getContextPath() %>/admin/customers" class="menu-link">
+        <li class="menu-item ${activeMenuLower == 'customers' ? 'active' : ''}">
+            <a href="${contextPath}/admin/customers" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-user"></i>
                 <div data-i18n="Customers">Khách hàng</div>
+            </a>
+        </li>
+        <li class="menu-item ${activeMenuLower == 'staff' ? 'active' : ''}">
+            <a href="${contextPath}/admin/staff" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-id-card"></i>
+                <div data-i18n="Staff">Nhân viên</div>
             </a>
         </li>
     </ul>

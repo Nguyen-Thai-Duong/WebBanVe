@@ -9,47 +9,60 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import model.User;
 import util.PasswordUtils;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller for managing customer accounts in the admin module.
  */
-@WebServlet(name = "CustomerController", urlPatterns = {"/admin/customers"})
+@WebServlet(name = "CustomerController", urlPatterns = {"/admin/customers", "/admin/customers/new", "/admin/customers/edit"})
 public class CustomerController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger LOGGER = Logger.getLogger(CustomerController.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(CustomerController.class);
     private static final String DEFAULT_ROLE = "Customer";
+    private static final String[] CUSTOMER_STATUSES = {"Active", "Inactive", "Suspended", "Locked"};
+    private static final DateTimeFormatter TABLE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final CustomerDAO customerDAO = new CustomerDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        loadCustomers(request);
-        request.getRequestDispatcher("/WEB-INF/admin/customer-list.jsp").forward(request, response);
+        String path = request.getServletPath();
+        switch (path) {
+            case "/admin/customers":
+                loadCustomers(request);
+                request.getRequestDispatcher("/WEB-INF/admin/customers/customer-list.jsp").forward(request, response);
+                break;
+            case "/admin/customers/new":
+                prepareCustomerForm(request, null);
+                request.getRequestDispatcher("/WEB-INF/admin/customers/customer-create.jsp").forward(request, response);
+                break;
+            case "/admin/customers/edit":
+                handleEditForm(request, response);
+                break;
+            default:
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
-        String action = request.getParameter("action");
-        if (action == null) {
-            response.sendRedirect(request.getContextPath() + "/admin/customers");
-            return;
-        }
-
-        switch (action) {
-            case "create":
+        String path = request.getServletPath();
+        switch (path) {
+            case "/admin/customers":
+                handleActionPost(request, response);
+                break;
+            case "/admin/customers/new":
                 handleCreate(request, response);
                 break;
-            case "update":
+            case "/admin/customers/edit":
                 handleUpdate(request, response);
-                break;
-            case "delete":
-                handleDelete(request, response);
                 break;
             default:
                 response.sendRedirect(request.getContextPath() + "/admin/customers");
@@ -60,7 +73,7 @@ public class CustomerController extends HttpServlet {
         User customer = buildCustomerFromRequest(request, true);
         if (!isValidCustomer(customer, true)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
-            response.sendRedirect(request.getContextPath() + "/admin/customers");
+            response.sendRedirect(request.getContextPath() + "/admin/customers/new");
             return;
         }
         boolean created = customerDAO.insert(customer);
@@ -79,7 +92,7 @@ public class CustomerController extends HttpServlet {
         }
         if (!isValidCustomer(customer, false)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
-            response.sendRedirect(request.getContextPath() + "/admin/customers");
+            response.sendRedirect(request.getContextPath() + "/admin/customers/edit?userId=" + customer.getUserId());
             return;
         }
         boolean updated = customerDAO.update(customer);
@@ -103,8 +116,46 @@ public class CustomerController extends HttpServlet {
 
     private void loadCustomers(HttpServletRequest request) {
         List<User> customers = customerDAO.findAll();
+        if (customers == null) {
+            customers = Collections.emptyList();
+        }
         request.setAttribute("customers", customers);
         request.setAttribute("activeMenu", "customers");
+        request.setAttribute("customerStatuses", CUSTOMER_STATUSES);
+        request.setAttribute("dateFormatter", TABLE_FORMATTER);
+    }
+
+    private void prepareCustomerForm(HttpServletRequest request, User customer) {
+        request.setAttribute("customer", customer);
+        request.setAttribute("activeMenu", "customers");
+        request.setAttribute("customerStatuses", CUSTOMER_STATUSES);
+        request.setAttribute("dateFormatter", TABLE_FORMATTER);
+    }
+
+    private void handleEditForm(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        Integer userId = parseInteger(request.getParameter("userId"));
+        if (userId == null) {
+            setFlash(request.getSession(), "danger", "Thiếu mã khách hàng cần chỉnh sửa.");
+            response.sendRedirect(request.getContextPath() + "/admin/customers");
+            return;
+        }
+        User customer = customerDAO.findById(userId);
+        if (customer == null) {
+            setFlash(request.getSession(), "danger", "Không tìm thấy khách hàng.");
+            response.sendRedirect(request.getContextPath() + "/admin/customers");
+            return;
+        }
+        prepareCustomerForm(request, customer);
+    request.getRequestDispatcher("/WEB-INF/admin/customers/customer-edit.jsp").forward(request, response);
+    }
+
+    private void handleActionPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String action = request.getParameter("action");
+        if ("delete".equals(action)) {
+            handleDelete(request, response);
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/customers");
+        }
     }
 
     private User buildCustomerFromRequest(HttpServletRequest request, boolean requirePassword) {
@@ -121,7 +172,7 @@ public class CustomerController extends HttpServlet {
             try {
                 customer.setPasswordHash(PasswordUtils.hashPassword(password));
             } catch (RuntimeException ex) {
-                LOGGER.log(Level.SEVERE, "Không thể mã hóa mật khẩu", ex);
+                LOGGER.error("Không thể mã hóa mật khẩu", ex);
                 customer.setPasswordHash(null);
             }
         } else if (requirePassword) {

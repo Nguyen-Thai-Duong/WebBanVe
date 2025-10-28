@@ -9,9 +9,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -53,4 +56,46 @@ public class Trip implements Serializable {
 
     @Column(name = "TripStatus", nullable = false, length = 50)
     private String tripStatus = "Scheduled";
+
+        @Transient
+        public String formatDeparture(DateTimeFormatter formatter) {
+            if (formatter == null || departureTime == null) {
+                return null;
+            }
+            return formatter.format(departureTime);
+        }
+
+        @Transient
+        public String formatArrival(DateTimeFormatter formatter) {
+            if (formatter == null || arrivalTime == null) {
+                return null;
+            }
+            return formatter.format(arrivalTime);
+        }
+
+        @Transient
+        public Duration getDuration() {
+            if (departureTime == null || arrivalTime == null) {
+                return null;
+            }
+            return Duration.between(departureTime, arrivalTime);
+        }
+
+        @Transient
+        public long getDurationMinutesTotal() {
+            Duration duration = getDuration();
+            return duration != null ? duration.toMinutes() : -1L;
+        }
+
+        @Transient
+        public long getDurationHoursPart() {
+            long totalMinutes = getDurationMinutesTotal();
+            return totalMinutes >= 0 ? totalMinutes / 60 : -1L;
+        }
+
+        @Transient
+        public long getDurationMinutesPart() {
+            long totalMinutes = getDurationMinutesTotal();
+            return totalMinutes >= 0 ? totalMinutes % 60 : -1L;
+        }
 }
