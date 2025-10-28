@@ -2,6 +2,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="app" tagdir="/WEB-INF/tags" %>
 
 <c:set var="payments" value="${requestScope.payments}" />
 <c:set var="dateFormatter" value="${requestScope.dateFormatter}" />
@@ -116,9 +117,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <strong>
-                                                <fmt:formatNumber value="${payment.amount}" type="number" minFractionDigits="0" maxFractionDigits="2" /> ₫
-                                            </strong>
+                                            <strong><app:currency value="${payment.amount}" /></strong>
                                         </td>
                                         <td>
                                             <span class="badge bg-label-${typeBadge}">${payment.type}</span>

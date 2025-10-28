@@ -77,7 +77,7 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label class="form-label" for="fullName">Họ và tên</label>
-                                        <input type="text" class="form-control" id="fullName" name="fullName" required>
+                                        <input type="text" class="form-control" id="fullName" name="fullName" pattern="[A-Za-zÀ-ỹà-ỹ\s'.-]{2,100}" title="Chỉ dùng chữ cái và khoảng trắng." required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label" for="email">Email</label>
@@ -85,7 +85,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label" for="phoneNumber">Điện thoại</label>
-                                        <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" required>
+                                        <input type="text" class="form-control" id="phoneNumber" name="phoneNumber" inputmode="numeric" pattern="\d{7,20}" title="Chỉ nhập chữ số." required>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label" for="status">Trạng thái</label>

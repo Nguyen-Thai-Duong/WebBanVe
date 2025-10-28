@@ -18,6 +18,7 @@ import java.util.List;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.InputValidator;
 
 /**
  * Controller responsible for booking administration CRUD flows.
@@ -170,6 +171,11 @@ public class BookingController extends HttpServlet {
         }
         if (booking.getCustomerId() == null && (booking.getGuestPhoneNumber() == null || booking.getGuestPhoneNumber().isBlank())) {
             setFlash(request.getSession(), "bookingMessage", "Cần chọn khách hàng hoặc cung cấp số điện thoại khách lẻ.", "danger");
+            return false;
+        }
+        if (booking.getGuestPhoneNumber() != null && !booking.getGuestPhoneNumber().isBlank()
+                && !InputValidator.isDigitsOnly(booking.getGuestPhoneNumber())) {
+            setFlash(request.getSession(), "bookingMessage", "Số điện thoại khách lẻ chỉ được chứa chữ số.", "danger");
             return false;
         }
         return true;

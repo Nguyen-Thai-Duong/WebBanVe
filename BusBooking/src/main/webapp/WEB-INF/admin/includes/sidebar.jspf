@@ -76,7 +76,7 @@
         <li class="menu-item ${activeMenuLower == 'dashboard' ? 'active' : ''}">
             <a href="${contextPath}/admin/dashboard" class="menu-link">
                 <i class="menu-icon tf-icons bx bx-home-circle"></i>
-                <div data-i18n="Dashboard">Dashboard</div>
+                <div data-i18n="Dashboard">Tổng quan</div>
             </a>
         </li>
 

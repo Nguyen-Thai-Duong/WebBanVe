@@ -15,6 +15,7 @@ import java.util.List;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.InputValidator;
 
 @WebServlet(name = "StaffController", urlPatterns = {"/admin/staff", "/admin/staff/new", "/admin/staff/edit"})
 public class StaffController extends HttpServlet {
@@ -110,6 +111,10 @@ public class StaffController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/staff/new");
             return;
         }
+        if (!validateStaffFields(request, staff)) {
+            response.sendRedirect(request.getContextPath() + "/admin/staff/new");
+            return;
+        }
 
         boolean inserted = staffDAO.insert(staff);
         if (inserted) {
@@ -135,6 +140,10 @@ public class StaffController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/staff/edit?id=" + userId);
             return;
         }
+        if (!validateStaffFields(request, staff)) {
+            response.sendRedirect(request.getContextPath() + "/admin/staff/edit?id=" + userId);
+            return;
+        }
 
         if (!applyPasswordUpdateIfPresent(request, staff)) {
             response.sendRedirect(request.getContextPath() + "/admin/staff/edit?id=" + userId);
@@ -148,6 +157,18 @@ public class StaffController extends HttpServlet {
             setFlash(request.getSession(), "staffMessage", "Không thể cập nhật nhân viên, vui lòng thử lại.", "danger");
         }
         response.sendRedirect(request.getContextPath() + "/admin/staff");
+    }
+
+    private boolean validateStaffFields(HttpServletRequest request, User staff) {
+        if (!InputValidator.isAlphabeticName(staff.getFullName())) {
+            setFlash(request.getSession(), "staffMessage", "Họ và tên chỉ được chứa chữ cái và khoảng trắng.", "danger");
+            return false;
+        }
+        if (!InputValidator.isDigitsOnly(staff.getPhoneNumber())) {
+            setFlash(request.getSession(), "staffMessage", "Số điện thoại chỉ được chứa chữ số.", "danger");
+            return false;
+        }
+        return true;
     }
 
     private void handleDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {

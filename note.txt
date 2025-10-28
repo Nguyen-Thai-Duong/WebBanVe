@@ -1,0 +1,11 @@
+-Tuyến đường
++ Thêm cột thời gian (Thời gian của tuyến đường)
++ Thêm trạng thái tuyến đường(2 trạng thái)
++ thêm cột tổng số lượng chuyến hiện có (ví dụ: 1/5) và tối đa là 5 chuyến
++ khoảng cách: không có số thập phân(vd: 10.12 , 18.8) mà phải luôn chẵn (vd: 10, 5, 7, 8)
+------------------------
+-Chuyến đi
++ Thời gian đến = Thời gian xuất phát + Thời gian của tuyến đường
+-------------------------------------------------------------------
+trường số tiền, số điện thoại(tối đa 10 số) ở create và edit phải luôn là số
+trường tên: nhân viên, người dùng, operator luôn phải là chữ cái
