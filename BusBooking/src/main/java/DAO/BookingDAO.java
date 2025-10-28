@@ -26,15 +26,15 @@ public class BookingDAO {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingDAO.class);
 
     private static final String BASE_SELECT =
-            "SELECT b.BookingID, b.TripID, b.UserID, b.GuestPhoneNumber, b.GuestEmail, "
-                    + "b.BookingDate, b.BookingStatus, b.SeatNumber, b.SeatStatus, b.TTL_Expiry, "
-                    + "trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, veh.LicensePlate, "
-                    + "cust.FullName AS CustomerName, cust.Email AS CustomerEmail, cust.PhoneNumber AS CustomerPhone "
-                    + "FROM BOOKING b "
-                    + "JOIN TRIP trip ON b.TripID = trip.TripID "
-                    + "JOIN ROUTE route ON trip.RouteID = route.RouteID "
-                    + "LEFT JOIN VEHICLE veh ON trip.VehicleID = veh.VehicleID "
-                    + "LEFT JOIN [USER] cust ON b.UserID = cust.UserID";
+        "SELECT b.BookingID, b.TripID, b.UserID, b.GuestPhoneNumber, b.GuestEmail, "
+            + "b.BookingDate, b.BookingStatus, b.SeatNumber, b.SeatStatus, b.TTL_Expiry, "
+            + "trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, route.DurationMinutes, route.RouteStatus, veh.LicensePlate, "
+            + "cust.FullName AS CustomerName, cust.Email AS CustomerEmail, cust.PhoneNumber AS CustomerPhone "
+            + "FROM BOOKING b "
+            + "JOIN TRIP trip ON b.TripID = trip.TripID "
+            + "JOIN ROUTE route ON trip.RouteID = route.RouteID "
+            + "LEFT JOIN VEHICLE veh ON trip.VehicleID = veh.VehicleID "
+            + "LEFT JOIN [USER] cust ON b.UserID = cust.UserID";
 
     public List<BookingAdminView> findAll() {
         String sql = BASE_SELECT + " ORDER BY b.BookingDate DESC, b.BookingID DESC";
@@ -176,7 +176,7 @@ public class BookingDAO {
     }
 
     public List<TripOption> findTripOptions() {
-        String sql = "SELECT trip.TripID, trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, veh.LicensePlate "
+    String sql = "SELECT trip.TripID, trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, route.DurationMinutes, veh.LicensePlate "
                 + "FROM TRIP trip "
                 + "JOIN ROUTE route ON trip.RouteID = route.RouteID "
                 + "JOIN VEHICLE veh ON trip.VehicleID = veh.VehicleID "
@@ -196,8 +196,15 @@ public class BookingDAO {
                     String origin = rs.getString("Origin");
                     String destination = rs.getString("Destination");
                     option.setRouteLabel(buildRouteLabel(origin, destination));
-                    option.setDepartureTime(toLocalDateTime(rs.getTimestamp("DepartureTime")));
-                    option.setArrivalTime(toLocalDateTime(rs.getTimestamp("ArrivalTime")));
+                    LocalDateTime departure = toLocalDateTime(rs.getTimestamp("DepartureTime"));
+                    LocalDateTime arrival = toLocalDateTime(rs.getTimestamp("ArrivalTime"));
+                    int duration = rs.getInt("DurationMinutes");
+                    boolean durationIsNull = rs.wasNull();
+                    if (arrival == null && !durationIsNull && departure != null) {
+                        arrival = departure.plusMinutes(duration);
+                    }
+                    option.setDepartureTime(departure);
+                    option.setArrivalTime(arrival);
                     option.setVehicleLabel(rs.getString("LicensePlate"));
                     options.add(option);
                 }
@@ -251,10 +258,20 @@ public class BookingDAO {
         view.setSeatNumber(rs.getString("SeatNumber"));
         view.setSeatStatus(rs.getString("SeatStatus"));
         view.setTtlExpiry(toLocalDateTime(rs.getTimestamp("TTL_Expiry")));
-        view.setDepartureTime(toLocalDateTime(rs.getTimestamp("DepartureTime")));
-        view.setArrivalTime(toLocalDateTime(rs.getTimestamp("ArrivalTime")));
+        LocalDateTime departure = toLocalDateTime(rs.getTimestamp("DepartureTime"));
+        LocalDateTime arrival = toLocalDateTime(rs.getTimestamp("ArrivalTime"));
+        int duration = rs.getInt("DurationMinutes");
+        boolean durationIsNull = rs.wasNull();
+        if (arrival == null && !durationIsNull && departure != null) {
+            arrival = departure.plusMinutes(duration);
+        }
+        view.setDepartureTime(departure);
+        view.setArrivalTime(arrival);
         view.setRouteOrigin(rs.getString("Origin"));
         view.setRouteDestination(rs.getString("Destination"));
+        view.setRouteDurationMinutes(durationIsNull ? null : duration);
+        String routeStatus = rs.getString("RouteStatus");
+        view.setRouteStatus(routeStatus != null && !routeStatus.isBlank() ? routeStatus : "Active");
         view.setVehiclePlate(rs.getString("LicensePlate"));
         view.setCustomerName(rs.getString("CustomerName"));
         view.setCustomerEmail(rs.getString("CustomerEmail"));

@@ -1,6 +1,6 @@
 package controller.admin;
 
-import DAO.StaffDAO;
+import DAO.OperatorDAO;
 import DAO.VehicleDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -30,7 +30,7 @@ public class VehicleController extends HttpServlet {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final VehicleDAO vehicleDAO = new VehicleDAO();
-    private final StaffDAO staffDAO = new StaffDAO();
+    private final OperatorDAO operatorDAO = new OperatorDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -175,20 +175,20 @@ public class VehicleController extends HttpServlet {
     }
 
     private void prepareVehicleForm(HttpServletRequest request, Vehicle vehicle) {
-        List<User> staffMembers = staffDAO.findAll();
-        if (staffMembers == null) {
-            staffMembers = Collections.emptyList();
+        List<User> operators = operatorDAO.findAll();
+        if (operators == null) {
+            operators = Collections.emptyList();
         } else {
             List<User> filtered = new ArrayList<>();
-            for (User staff : staffMembers) {
-                if (staff != null && staff.getEmployeeCode() != null && !staff.getEmployeeCode().isBlank()) {
-                    filtered.add(staff);
+            for (User operator : operators) {
+                if (operator != null && operator.getEmployeeCode() != null && !operator.getEmployeeCode().isBlank()) {
+                    filtered.add(operator);
                 }
             }
-            staffMembers = filtered;
+            operators = filtered;
         }
         request.setAttribute("vehicle", vehicle);
-        request.setAttribute("staffOperators", staffMembers);
+        request.setAttribute("busOperators", operators);
         request.setAttribute("vehicleStatuses", VEHICLE_STATUSES);
         request.setAttribute("dateTimeFormatter", DATE_TIME_FORMATTER);
         request.setAttribute("activeMenu", "vehicles");

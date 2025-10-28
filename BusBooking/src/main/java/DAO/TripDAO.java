@@ -28,8 +28,8 @@ public class TripDAO {
     private static final Logger LOGGER = Logger.getLogger(TripDAO.class.getName());
 
     private static final String BASE_SELECT = "SELECT "
-            + "t.TripID, t.RouteID, t.DepartureTime, t.ArrivalTime, t.Price, t.VehicleID, t.OperatorID, t.TripStatus, "
-            + "r.Origin, r.Destination, r.Distance, "
+        + "t.TripID, t.RouteID, t.DepartureTime, t.ArrivalTime, t.Price, t.VehicleID, t.OperatorID, t.TripStatus, "
+        + "r.Origin, r.Destination, r.Distance, r.DurationMinutes, r.RouteStatus, "
             + "v.LicensePlate, v.Model, v.Capacity, "
             + "u.FullName AS OperatorName, u.Email AS OperatorEmail, u.EmployeeCode "
             + "FROM TRIP t "
@@ -150,7 +150,10 @@ public class TripDAO {
     }
 
     public List<Route> findRoutes() {
-        String sql = "SELECT RouteID, Origin, Destination, Distance FROM ROUTE ORDER BY Origin, Destination";
+        String sql = "SELECT r.RouteID, r.Origin, r.Destination, r.Distance, r.DurationMinutes, r.RouteStatus, "
+                + "COALESCE(tc.TotalTrips, 0) AS TripCount FROM ROUTE r "
+                + "LEFT JOIN (SELECT RouteID, COUNT(*) AS TotalTrips FROM TRIP GROUP BY RouteID) tc "
+                + "ON r.RouteID = tc.RouteID ORDER BY r.Origin, r.Destination";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
@@ -166,6 +169,11 @@ public class TripDAO {
                 route.setOrigin(rs.getString("Origin"));
                 route.setDestination(rs.getString("Destination"));
                 route.setDistance(rs.getBigDecimal("Distance"));
+                int duration = rs.getInt("DurationMinutes");
+                boolean durationIsNull = rs.wasNull();
+                route.setDurationMinutes(durationIsNull ? null : duration);
+                route.setRouteStatus(rs.getString("RouteStatus"));
+                route.setTripCount(rs.getInt("TripCount"));
                 routes.add(route);
             }
             return routes;
@@ -174,6 +182,31 @@ public class TripDAO {
             LOGGER.log(Level.SEVERE, "Failed to load routes", ex);
             return Collections.emptyList();
         }
+    }
+
+    public int countTripsByRoute(int routeId, Integer excludeTripId) {
+        String sql = "SELECT COUNT(*) FROM TRIP WHERE RouteID = ?" + (excludeTripId != null ? " AND TripID <> ?" : "");
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null when counting trips for route {0}", routeId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, routeId);
+                if (excludeTripId != null) {
+                    ps.setInt(2, excludeTripId);
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to count trips for route " + routeId, ex);
+        }
+        return 0;
     }
 
     public List<Vehicle> findVehicles() {
@@ -244,8 +277,10 @@ public class TripDAO {
     private Trip mapTrip(ResultSet rs) throws SQLException {
         Trip trip = new Trip();
         trip.setTripId(rs.getInt("TripID"));
-        trip.setDepartureTime(toLocalDateTime(rs.getTimestamp("DepartureTime")));
-        trip.setArrivalTime(toLocalDateTime(rs.getTimestamp("ArrivalTime")));
+        LocalDateTime departure = toLocalDateTime(rs.getTimestamp("DepartureTime"));
+        LocalDateTime arrival = toLocalDateTime(rs.getTimestamp("ArrivalTime"));
+        trip.setDepartureTime(departure);
+        trip.setArrivalTime(arrival);
         trip.setPrice(rs.getBigDecimal("Price"));
         trip.setTripStatus(rs.getString("TripStatus"));
 
@@ -254,6 +289,11 @@ public class TripDAO {
         route.setOrigin(rs.getString("Origin"));
         route.setDestination(rs.getString("Destination"));
         route.setDistance(rs.getBigDecimal("Distance"));
+        int duration = rs.getInt("DurationMinutes");
+        boolean durationIsNull = rs.wasNull();
+        route.setDurationMinutes(durationIsNull ? null : duration);
+        String routeStatus = rs.getString("RouteStatus");
+        route.setRouteStatus(routeStatus != null && !routeStatus.isBlank() ? routeStatus : "Active");
         trip.setRoute(route);
 
         Vehicle vehicle = new Vehicle();
@@ -269,6 +309,10 @@ public class TripDAO {
         operator.setEmail(rs.getString("OperatorEmail"));
         operator.setEmployeeCode(rs.getString("EmployeeCode"));
         trip.setOperator(operator);
+
+        if (trip.getArrivalTime() == null && route.getDurationMinutes() != null && departure != null) {
+            trip.setArrivalTime(departure.plusMinutes(route.getDurationMinutes()));
+        }
 
         return trip;
     }

@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 import model.User;
+import util.InputValidator;
 import util.PasswordUtils;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -76,6 +77,10 @@ public class CustomerController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/customers/new");
             return;
         }
+        if (!validateCustomerFields(request, customer)) {
+            response.sendRedirect(request.getContextPath() + "/admin/customers/new");
+            return;
+        }
         boolean created = customerDAO.insert(customer);
         setFlash(request.getSession(), created ? "success" : "danger",
                 created ? "Tạo khách hàng thành công." : "Không thể tạo khách hàng. Vui lòng thử lại.");
@@ -92,6 +97,10 @@ public class CustomerController extends HttpServlet {
         }
         if (!isValidCustomer(customer, false)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
+            response.sendRedirect(request.getContextPath() + "/admin/customers/edit?userId=" + customer.getUserId());
+            return;
+        }
+        if (!validateCustomerFields(request, customer)) {
             response.sendRedirect(request.getContextPath() + "/admin/customers/edit?userId=" + customer.getUserId());
             return;
         }
@@ -186,6 +195,18 @@ public class CustomerController extends HttpServlet {
                 && customer.getEmail() != null && !customer.getEmail().isBlank()
                 && customer.getPhoneNumber() != null && !customer.getPhoneNumber().isBlank()
                 && (!requirePassword || (customer.getPasswordHash() != null && !customer.getPasswordHash().isBlank()));
+    }
+
+    private boolean validateCustomerFields(HttpServletRequest request, User customer) {
+        if (!InputValidator.isAlphabeticName(customer.getFullName())) {
+            setFlash(request.getSession(), "danger", "Họ và tên chỉ được chứa chữ cái và khoảng trắng.");
+            return false;
+        }
+        if (!InputValidator.isDigitsOnly(customer.getPhoneNumber())) {
+            setFlash(request.getSession(), "danger", "Số điện thoại chỉ được chứa chữ số.");
+            return false;
+        }
+        return true;
     }
 
     private Integer parseInteger(String value) {

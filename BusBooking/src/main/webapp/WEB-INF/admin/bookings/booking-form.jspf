@@ -1,5 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" language="java" %>
 
 <c:set var="booking" value="${requestScope.booking}" />
 <c:set var="tripOptions" value="${requestScope.tripOptions}" />
@@ -59,7 +60,7 @@
         </div>
         <div class="col-md-6">
             <label class="form-label" for="guestPhone">Điện thoại khách lẻ</label>
-            <input type="text" class="form-control" id="guestPhone" name="guestPhone" value="${booking.guestPhoneNumber}" placeholder="Ví dụ: 0909xxxxxx" />
+            <input type="text" class="form-control" id="guestPhone" name="guestPhone" value="${booking.guestPhoneNumber}" placeholder="Ví dụ: 0909xxxxxx" inputmode="numeric" pattern="\d{7,20}" />
             <div class="form-text">Bắt buộc nếu không chọn khách hàng.</div>
         </div>
         <div class="col-md-6">

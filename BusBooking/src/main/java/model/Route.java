@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import lombok.Getter;
@@ -34,4 +35,13 @@ public class Route implements Serializable {
 
     @Column(name = "Distance")
     private BigDecimal distance;
+
+    @Column(name = "DurationMinutes")
+    private Integer durationMinutes;
+
+    @Column(name = "RouteStatus", nullable = false, length = 20)
+    private String routeStatus = "Active";
+
+    @Transient
+    private Integer tripCount;
 }

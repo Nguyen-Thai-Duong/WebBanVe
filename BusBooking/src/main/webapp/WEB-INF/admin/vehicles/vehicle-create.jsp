@@ -25,7 +25,7 @@
     <c:set var="statuses" value="${fn:split('Available,In Service,Maintenance,Repair,Retired', ',')}" />
 </c:if>
 
-<c:set var="staffOperators" value="${requestScope.staffOperators}" />
+<c:set var="busOperators" value="${requestScope.busOperators}" />
 <!DOCTYPE html>
 <html lang="vi" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default" data-assets-path="${assetBase}/" data-template="vertical-menu-template-free">
 <head>
@@ -35,7 +35,7 @@
     <link rel="icon" type="image/x-icon" href="${imgPath}/favicon/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese" rel="stylesheet" />
     <link rel="stylesheet" href="${vendorPath}/fonts/boxicons.css" />
     <link rel="stylesheet" href="${vendorPath}/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="${vendorPath}/css/theme-default.css" class="template-customizer-theme-css" />
@@ -101,11 +101,11 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label" for="operatorCode">Người phụ trách</label>
+                                        <label class="form-label" for="operatorCode">Người phụ trách (Bus Operator)</label>
                                         <select class="form-select" id="operatorCode" name="operatorCode" required>
-                                            <option value="" disabled selected>-- Chọn nhân viên phụ trách --</option>
-                                            <c:forEach var="staff" items="${staffOperators}">
-                                                <option value="${staff.employeeCode}">${staff.fullName} (${staff.employeeCode})</option>
+                                            <option value="" disabled selected>-- Chọn bus operator phụ trách --</option>
+                                            <c:forEach var="operator" items="${busOperators}">
+                                                <option value="${operator.employeeCode}">${operator.fullName} (${operator.employeeCode})</option>
                                             </c:forEach>
                                         </select>
                                     </div>

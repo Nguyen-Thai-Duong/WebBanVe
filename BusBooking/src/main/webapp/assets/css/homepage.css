@@ -1,16 +1,22 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese");
+
 :root {
     --futa-green: #00613d;
     --futa-orange: #ef5222;
     --futa-orange-light: #fde2d1;
     --futa-gray: #556270;
     --futa-bg-soft: linear-gradient(180deg, rgba(255, 239, 228, 0.55) 0%, rgba(255, 255, 255, 0.85) 45%, #ffffff 100%);
+    --app-font-family: "Inter", "Inter Tight", "Segoe UI", Tahoma, Geneva, sans-serif;
 }
 
 body {
-    font-family: "Inter Tight", "Segoe UI", Tahoma, Geneva, sans-serif;
+    font-family: var(--app-font-family);
     background: #ffffff;
     color: #1c1c1c;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 header {

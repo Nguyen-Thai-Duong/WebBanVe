@@ -26,7 +26,7 @@
 </c:if>
 
 <c:set var="vehicle" value="${requestScope.vehicle}" />
-<c:set var="staffOperators" value="${requestScope.staffOperators}" />
+<c:set var="busOperators" value="${requestScope.busOperators}" />
 <c:set var="dateTimeFormatter" value="${requestScope.dateTimeFormatter}" />
 <c:set var="currentOperatorCode" value="${vehicle != null && vehicle.operator != null ? vehicle.operator.employeeCode : ''}" />
 <c:set var="currentStatus" value="${vehicle != null && not empty vehicle.vehicleStatus ? vehicle.vehicleStatus : 'Available'}" />
@@ -40,7 +40,7 @@
     <link rel="icon" type="image/x-icon" href="${imgPath}/favicon/favicon.ico" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap&subset=latin-ext,vietnamese" rel="stylesheet" />
     <link rel="stylesheet" href="${vendorPath}/fonts/boxicons.css" />
     <link rel="stylesheet" href="${vendorPath}/css/core.css" class="template-customizer-core-css" />
     <link rel="stylesheet" href="${vendorPath}/css/theme-default.css" class="template-customizer-theme-css" />
@@ -127,11 +127,11 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label" for="operatorCode">Người phụ trách</label>
+                                                <label class="form-label" for="operatorCode">Người phụ trách (Bus Operator)</label>
                                                 <select class="form-select" id="operatorCode" name="operatorCode" required>
-                                                    <option value="" disabled<c:if test="${empty currentOperatorCode}"> selected</c:if>>-- Chọn nhân viên phụ trách --</option>
-                                                    <c:forEach var="staff" items="${staffOperators}">
-                                                        <option value="${staff.employeeCode}"<c:if test="${staff.employeeCode eq currentOperatorCode}"> selected</c:if>>${staff.fullName} (${staff.employeeCode})</option>
+                                                    <option value="" disabled<c:if test="${empty currentOperatorCode}"> selected</c:if>>-- Chọn bus operator phụ trách --</option>
+                                                    <c:forEach var="operator" items="${busOperators}">
+                                                        <option value="${operator.employeeCode}"<c:if test="${operator.employeeCode eq currentOperatorCode}"> selected</c:if>>${operator.fullName} (${operator.employeeCode})</option>
                                                     </c:forEach>
                                                 </select>
                                             </div>

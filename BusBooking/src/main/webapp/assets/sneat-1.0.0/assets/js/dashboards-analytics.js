@@ -303,14 +303,14 @@
               color: headingColor,
               fontSize: '15px',
               fontWeight: '600',
-              fontFamily: 'Public Sans'
+              fontFamily: 'Inter'
             },
             value: {
               offsetY: -25,
               color: headingColor,
               fontSize: '22px',
               fontWeight: '500',
-              fontFamily: 'Public Sans'
+              fontFamily: 'Inter'
             }
           }
         }
@@ -458,7 +458,7 @@
               show: true,
               value: {
                 fontSize: '1.5rem',
-                fontFamily: 'Public Sans',
+                fontFamily: 'Inter',
                 color: headingColor,
                 offsetY: -15,
                 formatter: function (val) {
@@ -467,7 +467,7 @@
               },
               name: {
                 offsetY: 20,
-                fontFamily: 'Public Sans'
+                fontFamily: 'Inter'
               },
               total: {
                 show: true,
