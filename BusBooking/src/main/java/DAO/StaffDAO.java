@@ -12,17 +12,17 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import model.User;
 
 /**
- * Data access object for managing customer accounts (role = Customer).
+ * Data access object for managing staff accounts (role = Staff).
  */
-public class CustomerDAO {
+public class StaffDAO {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CustomerDAO.class);
-    private static final String CUSTOMER_ROLE = "Customer";
+    private static final Logger LOGGER = LoggerFactory.getLogger(StaffDAO.class);
+    private static final String STAFF_ROLE = "Staff";
 
     private static final String BASE_SELECT = "SELECT UserID, EmployeeCode, FullName, Email, PhoneNumber, Role, Status, Address, CreatedAt, UpdatedAt "
             + "FROM [USER] WHERE Role = ?";
@@ -32,21 +32,21 @@ public class CustomerDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading customers");
+                LOGGER.error("Database connection is null when loading staff members");
                 return Collections.emptyList();
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, CUSTOMER_ROLE);
+                ps.setString(1, STAFF_ROLE);
                 try (ResultSet rs = ps.executeQuery()) {
-                    List<User> customers = new ArrayList<>();
+                    List<User> staffMembers = new ArrayList<>();
                     while (rs.next()) {
-                        customers.add(mapCustomer(rs));
+                        staffMembers.add(mapStaff(rs));
                     }
-                    return customers;
+                    return staffMembers;
                 }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load customers", ex);
+            LOGGER.error("Failed to load staff members", ex);
             return Collections.emptyList();
         }
     }
@@ -56,44 +56,44 @@ public class CustomerDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading customer id {}", userId);
+                LOGGER.error("Database connection is null when finding staff member id {}", userId);
                 return null;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, CUSTOMER_ROLE);
+                ps.setString(1, STAFF_ROLE);
                 ps.setInt(2, userId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        return mapCustomer(rs);
+                        return mapStaff(rs);
                     }
                 }
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to find customer with id {}", userId, ex);
+            LOGGER.error("Failed to find staff member with id {}", userId, ex);
         }
         return null;
     }
 
-    public boolean insert(User customer) {
+    public boolean insert(User staff) {
         String sql = "INSERT INTO [USER] (FullName, Email, PasswordHash, PhoneNumber, Role, Status, Address, CreatedAt, UpdatedAt) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         LocalDateTime now = LocalDateTime.now();
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when inserting customer");
+                LOGGER.error("Database connection is null when inserting staff member");
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 int idx = 1;
-                ps.setString(idx++, customer.getFullName());
-                ps.setString(idx++, customer.getEmail());
-                ps.setString(idx++, customer.getPasswordHash());
-                ps.setString(idx++, customer.getPhoneNumber());
-                ps.setString(idx++, CUSTOMER_ROLE);
-                ps.setString(idx++, customer.getStatus());
-                if (customer.getAddress() != null && !customer.getAddress().isBlank()) {
-                    ps.setString(idx++, customer.getAddress());
+                ps.setString(idx++, staff.getFullName());
+                ps.setString(idx++, staff.getEmail());
+                ps.setString(idx++, staff.getPasswordHash());
+                ps.setString(idx++, staff.getPhoneNumber());
+                ps.setString(idx++, STAFF_ROLE);
+                ps.setString(idx++, staff.getStatus());
+                if (staff.getAddress() != null && !staff.getAddress().isBlank()) {
+                    ps.setString(idx++, staff.getAddress());
                 } else {
                     ps.setNull(idx++, Types.NVARCHAR);
                 }
@@ -103,23 +103,23 @@ public class CustomerDAO {
                 if (affected > 0) {
                     try (ResultSet keys = ps.getGeneratedKeys()) {
                         if (keys.next()) {
-                            customer.setUserId(keys.getInt(1));
+                            staff.setUserId(keys.getInt(1));
                         }
                     }
                 }
                 return affected > 0;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to insert customer", ex);
+            LOGGER.error("Failed to insert staff member", ex);
             return false;
         }
     }
 
-    public boolean update(User customer) {
-        if (customer.getUserId() == null) {
-            throw new IllegalArgumentException("Customer ID is required for update");
+    public boolean update(User staff) {
+        if (staff.getUserId() == null) {
+            throw new IllegalArgumentException("Staff ID is required for update");
         }
-        boolean updatePassword = customer.getPasswordHash() != null && !customer.getPasswordHash().isBlank();
+        boolean updatePassword = staff.getPasswordHash() != null && !staff.getPasswordHash().isBlank();
         StringBuilder sql = new StringBuilder("UPDATE [USER] SET FullName = ?, Email = ?, PhoneNumber = ?, Status = ?, Address = ?, UpdatedAt = ?");
         if (updatePassword) {
             sql.append(", PasswordHash = ?");
@@ -129,30 +129,30 @@ public class CustomerDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when updating customer id {}", customer.getUserId());
+                LOGGER.error("Database connection is null when updating staff member id {}", staff.getUserId());
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
                 int idx = 1;
-                ps.setString(idx++, customer.getFullName());
-                ps.setString(idx++, customer.getEmail());
-                ps.setString(idx++, customer.getPhoneNumber());
-                ps.setString(idx++, customer.getStatus());
-                if (customer.getAddress() != null && !customer.getAddress().isBlank()) {
-                    ps.setString(idx++, customer.getAddress());
+                ps.setString(idx++, staff.getFullName());
+                ps.setString(idx++, staff.getEmail());
+                ps.setString(idx++, staff.getPhoneNumber());
+                ps.setString(idx++, staff.getStatus());
+                if (staff.getAddress() != null && !staff.getAddress().isBlank()) {
+                    ps.setString(idx++, staff.getAddress());
                 } else {
                     ps.setNull(idx++, Types.NVARCHAR);
                 }
                 setTimestamp(ps, idx++, LocalDateTime.now());
                 if (updatePassword) {
-                    ps.setString(idx++, customer.getPasswordHash());
+                    ps.setString(idx++, staff.getPasswordHash());
                 }
-                ps.setInt(idx++, customer.getUserId());
-                ps.setString(idx, CUSTOMER_ROLE);
+                ps.setInt(idx++, staff.getUserId());
+                ps.setString(idx, STAFF_ROLE);
                 return ps.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to update customer with id {}", customer.getUserId(), ex);
+            LOGGER.error("Failed to update staff member with id {}", staff.getUserId(), ex);
             return false;
         }
     }
@@ -162,33 +162,33 @@ public class CustomerDAO {
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when deleting customer id {}", userId);
+                LOGGER.error("Database connection is null when deleting staff member id {}", userId);
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, userId);
-                ps.setString(2, CUSTOMER_ROLE);
+                ps.setString(2, STAFF_ROLE);
                 return ps.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to delete customer with id {}", userId, ex);
+            LOGGER.error("Failed to delete staff member with id {}", userId, ex);
             return false;
         }
     }
 
-    private User mapCustomer(ResultSet rs) throws SQLException {
-        User customer = new User();
-        customer.setUserId(rs.getInt("UserID"));
-        customer.setEmployeeCode(rs.getString("EmployeeCode"));
-        customer.setFullName(rs.getString("FullName"));
-        customer.setEmail(rs.getString("Email"));
-        customer.setPhoneNumber(rs.getString("PhoneNumber"));
-        customer.setRole(rs.getString("Role"));
-        customer.setStatus(rs.getString("Status"));
-        customer.setAddress(rs.getString("Address"));
-        customer.setCreatedAt(toLocalDateTime(rs.getTimestamp("CreatedAt")));
-        customer.setUpdatedAt(toLocalDateTime(rs.getTimestamp("UpdatedAt")));
-        return customer;
+    private User mapStaff(ResultSet rs) throws SQLException {
+        User staff = new User();
+        staff.setUserId(rs.getInt("UserID"));
+        staff.setEmployeeCode(rs.getString("EmployeeCode"));
+        staff.setFullName(rs.getString("FullName"));
+        staff.setEmail(rs.getString("Email"));
+        staff.setPhoneNumber(rs.getString("PhoneNumber"));
+        staff.setRole(rs.getString("Role"));
+        staff.setStatus(rs.getString("Status"));
+        staff.setAddress(rs.getString("Address"));
+        staff.setCreatedAt(toLocalDateTime(rs.getTimestamp("CreatedAt")));
+        staff.setUpdatedAt(toLocalDateTime(rs.getTimestamp("UpdatedAt")));
+        return staff;
     }
 
     private void setTimestamp(PreparedStatement ps, int index, LocalDateTime value) throws SQLException {

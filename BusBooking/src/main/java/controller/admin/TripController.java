@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.List;
 import model.Route;
 import model.Trip;
@@ -26,6 +27,7 @@ public class TripController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     private static final DateTimeFormatter FORM_INPUT_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    private static final DateTimeFormatter TABLE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String[] TRIP_STATUSES = {"Scheduled", "Departed", "Arrived", "Delayed", "Cancelled"};
 
     private final TripDAO tripDAO = new TripDAO();
@@ -37,13 +39,17 @@ public class TripController extends HttpServlet {
         switch (path) {
             case "/admin/trips":
                 List<Trip> trips = tripDAO.findAll();
+                if (trips == null) {
+                    trips = Collections.emptyList();
+                }
                 request.setAttribute("trips", trips);
+                request.setAttribute("tableFormatter", TABLE_FORMATTER);
                 request.setAttribute("activeMenu", "trips");
-                request.getRequestDispatcher("/WEB-INF/admin/trip-list.jsp").forward(request, response);
+                request.getRequestDispatcher("/WEB-INF/admin/trips/trip-list.jsp").forward(request, response);
                 break;
             case "/admin/trips/new":
                 prepareTripForm(request, null);
-                request.getRequestDispatcher("/WEB-INF/admin/trip-create.jsp").forward(request, response);
+                request.getRequestDispatcher("/WEB-INF/admin/trips/trip-create.jsp").forward(request, response);
                 break;
             case "/admin/trips/edit":
                 handleEditForm(request, response);
@@ -181,7 +187,7 @@ public class TripController extends HttpServlet {
             return;
         }
         prepareTripForm(request, trip);
-        request.getRequestDispatcher("/WEB-INF/admin/trip-edit.jsp").forward(request, response);
+    request.getRequestDispatcher("/WEB-INF/admin/trips/trip-edit.jsp").forward(request, response);
     }
 
     private void handleActionPost(HttpServletRequest request, HttpServletResponse response) throws IOException {

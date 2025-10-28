@@ -8,8 +8,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -68,5 +70,21 @@ public class User implements Serializable {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @Transient
+    public String formatCreatedAt(DateTimeFormatter formatter) {
+        if (formatter == null || createdAt == null) {
+            return null;
+        }
+        return formatter.format(createdAt);
+    }
+
+    @Transient
+    public String formatUpdatedAt(DateTimeFormatter formatter) {
+        if (formatter == null || updatedAt == null) {
+            return null;
+        }
+        return formatter.format(updatedAt);
     }
 }

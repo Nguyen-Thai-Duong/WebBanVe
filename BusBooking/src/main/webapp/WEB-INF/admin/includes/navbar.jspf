@@ -1,16 +1,33 @@
 <%@ page pageEncoding="UTF-8" %>
-<%
-    String searchPlaceholder = (String) request.getAttribute("navbarSearchPlaceholder");
-    if (searchPlaceholder == null || searchPlaceholder.isBlank()) {
-        searchPlaceholder = "Tim kiem...";
-    }
-    String searchAria = (String) request.getAttribute("navbarSearchAriaLabel");
-    if (searchAria == null || searchAria.isBlank()) {
-        searchAria = searchPlaceholder;
-    }
-    Boolean hideSearch = (Boolean) request.getAttribute("navbarHideSearch");
-    boolean showSearch = hideSearch == null || !hideSearch;
-%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
+<c:if test="${empty contextPath}">
+    <c:set var="contextPath" value="${pageContext.request.contextPath}" />
+</c:if>
+<c:if test="${empty assetBase}">
+    <c:set var="assetBase" value="${contextPath}/assets/sneat-1.0.0/assets" />
+</c:if>
+<c:if test="${empty imgPath}">
+    <c:set var="imgPath" value="${assetBase}/img" />
+</c:if>
+
+<c:set var="searchPlaceholder" value="${requestScope.navbarSearchPlaceholder}" />
+<c:if test="${empty searchPlaceholder}">
+    <c:set var="searchPlaceholder" value="Tìm kiếm..." />
+</c:if>
+
+<c:set var="searchAria" value="${requestScope.navbarSearchAriaLabel}" />
+<c:if test="${empty searchAria}">
+    <c:set var="searchAria" value="${searchPlaceholder}" />
+</c:if>
+
+<c:set var="hideSearch" value="${requestScope.navbarHideSearch}" />
+<c:set var="showSearch" value="${hideSearch == null or hideSearch == false}" />
+
+<c:set var="currentUser" value="${sessionScope.currentUser}" />
+<c:set var="userFullName" value="${not empty currentUser ? currentUser.fullName : 'Tài khoản'}" />
+<c:set var="userRole" value="${not empty currentUser ? currentUser.role : 'Quản trị viên'}" />
 <nav
     class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
     id="layout-navbar"
@@ -22,39 +39,39 @@
     </div>
 
     <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
-        <% if (showSearch) { %>
-        <div class="navbar-nav align-items-center">
-            <div class="nav-item d-flex align-items-center">
-                <i class="bx bx-search fs-4 lh-0"></i>
-                <input
-                    type="text"
-                    class="form-control border-0 shadow-none"
-                    placeholder="<%= searchPlaceholder %>"
-                    aria-label="<%= searchAria %>"
-                />
+        <c:if test="${showSearch}">
+            <div class="navbar-nav align-items-center">
+                <div class="nav-item d-flex align-items-center">
+                    <i class="bx bx-search fs-4 lh-0"></i>
+                    <input
+                        type="text"
+                        class="form-control border-0 shadow-none"
+                        placeholder="${searchPlaceholder}"
+                        aria-label="${searchAria}"
+                    />
+                </div>
             </div>
-        </div>
-        <% } %>
+        </c:if>
 
         <ul class="navbar-nav flex-row align-items-center ms-auto">
             <li class="nav-item navbar-dropdown dropdown-user dropdown">
                 <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown">
                     <div class="avatar avatar-online">
-                        <img src="<%= imgPath %>/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                        <img src="${imgPath}/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
                     </div>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li>
-                        <a class="dropdown-item" href="<%= contextPath %>/admin/account-settings">
+                        <a class="dropdown-item" href="${contextPath}/admin/account-settings">
                             <div class="d-flex">
                                 <div class="flex-shrink-0 me-3">
                                     <div class="avatar avatar-online">
-                                        <img src="<%= imgPath %>/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                                        <img src="${imgPath}/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
                                     </div>
                                 </div>
                                 <div class="flex-grow-1">
-                                    <span class="fw-semibold d-block"><%= session != null && session.getAttribute("currentUser") != null ? ((model.User) session.getAttribute("currentUser")).getFullName() : "Tài khoản" %></span>
-                                    <small class="text-muted"><%= session != null && session.getAttribute("currentUser") != null ? ((model.User) session.getAttribute("currentUser")).getRole() : "Quản trị viên" %></small>
+                                    <span class="fw-semibold d-block">${userFullName}</span>
+                                    <small class="text-muted">${userRole}</small>
                                 </div>
                             </div>
                         </a>
@@ -63,7 +80,7 @@
                         <div class="dropdown-divider"></div>
                     </li>
                     <li>
-                        <a class="dropdown-item" href="<%= contextPath %>/logout">
+                        <a class="dropdown-item" href="${contextPath}/logout">
                             <i class="bx bx-power-off me-2"></i>
                             <span class="align-middle">Đăng xuất</span>
                         </a>
