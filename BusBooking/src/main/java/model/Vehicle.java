@@ -9,9 +9,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -63,4 +65,28 @@ public class Vehicle implements Serializable {
 
     @Column(name = "CurrentCondition", length = 50)
     private String currentCondition;
+
+    @Transient
+    public String formatDateAdded(DateTimeFormatter formatter) {
+        if (formatter == null || dateAdded == null) {
+            return null;
+        }
+        return formatter.format(dateAdded);
+    }
+
+    @Transient
+    public String formatLastMaintenance(DateTimeFormatter formatter) {
+        if (formatter == null || lastMaintenanceDate == null) {
+            return null;
+        }
+        return formatter.format(lastMaintenanceDate);
+    }
+
+    @Transient
+    public String formatLastRepair(DateTimeFormatter formatter) {
+        if (formatter == null || lastRepairDate == null) {
+            return null;
+        }
+        return formatter.format(lastRepairDate);
+    }
 }
