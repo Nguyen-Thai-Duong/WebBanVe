@@ -1,5 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="model.User" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 <%
     String contextPath = request.getContextPath();
     User currentUser = (User) session.getAttribute("currentUser");
@@ -118,6 +120,61 @@
                                     <a href="<%= contextPath %>/homepage.jsp" class="btn btn-outline-secondary">Hủy</a>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <h5 class="card-header">Vé xe đã mua</h5>
+                        <div class="card-body">
+                            <%-- Check if the userTickets list passed from the controller is empty or not --%>
+                            <c:choose>
+                                <c:when test="${not empty userTickets}">
+                                    <div class="table-responsive text-nowrap">
+                                        <table class="table table-hover">
+                                            <thead>
+                                            <tr>
+                                                <th>Mã vé</th>
+                                                <th>Chuyến đi</th>
+                                                <th>Ghế</th>
+                                                <th>Giờ khởi hành</th>
+                                                <th>Ngày mua</th>
+                                                <th>Trạng thái</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody class="table-border-bottom-0">
+                                                <%-- Loop over each ticket in the list --%>
+                                            <c:forEach var="ticket" items="${userTickets}">
+                                                <tr>
+                                                    <td><i class="bx bx-bus-marker bx-sm text-info me-3"></i> <strong>${ticket.ticketNumber}</strong></td>
+                                                    <td>${ticket.routeDetails}</td>
+                                                    <td><span class="badge bg-label-info me-1">${ticket.seatNumber}</span></td>
+                                                    <td>
+                                                            <%-- Format the LocalDateTime object --%>
+                                                            ${ticket.formattedDepartureTime}
+                                                    </td>
+                                                    <td>
+                                                            ${ticket.formattedIssuedDate}
+                                                    </td>
+                                                    <td>
+                                                        <c:set var="badgeClass" value="bg-label-success" />
+                                                        <c:if test="${ticket.ticketStatus eq 'Pending' or ticket.ticketStatus eq 'Issued'}">
+                                                            <c:set var="badgeClass" value="bg-label-warning" />
+                                                        </c:if>
+                                                        <c:if test="${ticket.ticketStatus eq 'Void'}">
+                                                            <c:set var="badgeClass" value="bg-label-danger" />
+                                                        </c:if>
+                                                        <span class="badge ${badgeClass} me-1">${ticket.ticketStatus}</span>
+                                                    </td>
+                                                </tr>
+                                            </c:forEach>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </c:when>
+                                <c:otherwise>
+                                    <p class="text-muted">Bạn chưa mua vé xe nào.</p>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                     </div>
 
