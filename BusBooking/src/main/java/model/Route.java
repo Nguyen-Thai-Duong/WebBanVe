@@ -42,6 +42,9 @@ public class Route implements Serializable {
     @Column(name = "RouteStatus", nullable = false, length = 20)
     private String routeStatus = "Active";
 
+    @Column(name = "OperatorID")
+    private Integer operatorId;
+
     @Transient
     private Integer tripCount;
 }
