@@ -11,25 +11,27 @@ import java.util.Locale;
  */
 public class UserTicket {
     private String ticketNumber;
-    private String routeDetails; // e.g., "Hanoi -> Ho Chi Minh"
+    private String routeDetails;
     private LocalDateTime departureTime;
     private LocalDateTime issuedDate;
     private String ticketStatus;
     private String seatNumber;
 
-    // --- NEW FIELDS FOR DETAIL VIEW ---
+    // --- View ticket detail ---
     private BigDecimal price;
     private String origin;
     private String destination;
     private String vehicleOperatorEmployeeCode;
 
+    private Integer tripId;
+
     private static final DateTimeFormatter DEPARTURE_FORMAT = DateTimeFormatter.ofPattern("HH:mm, dd/MM/yyyy");
     private static final DateTimeFormatter ISSUED_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    // Constructor to map data from the DAO (UPDATED)
+
     public UserTicket(String ticketNumber, String routeDetails, LocalDateTime departureTime, LocalDateTime issuedDate,
                       String ticketStatus, String seatNumber, BigDecimal price, String origin,
-                      String destination, String vehicleOperatorEmployeeCode) {
+                      String destination, String vehicleOperatorEmployeeCode, Integer tripId) {
         this.ticketNumber = ticketNumber;
         this.routeDetails = routeDetails;
         this.departureTime = departureTime;
@@ -40,9 +42,10 @@ public class UserTicket {
         this.origin = origin;
         this.destination = destination;
         this.vehicleOperatorEmployeeCode = vehicleOperatorEmployeeCode;
+        this.tripId = tripId;
     }
 
-    // Existing Getters
+
     public String getTicketNumber() { return ticketNumber; }
     public String getRouteDetails() { return routeDetails; }
     public LocalDateTime getDepartureTime() { return departureTime; }
@@ -50,13 +53,15 @@ public class UserTicket {
     public String getTicketStatus() { return ticketStatus; }
     public String getSeatNumber() { return seatNumber; }
 
-    // New Detail Getters
+
     public BigDecimal getPrice() { return price; }
     public String getOrigin() { return origin; }
     public String getDestination() { return destination; }
     public String getVehicleOperatorEmployeeCode() { return vehicleOperatorEmployeeCode; }
 
-    // Existing Date/Time formatting methods
+    public Integer getTripId() { return tripId; }
+
+
     public String getFormattedDepartureTime() {
         if (this.departureTime == null) {
             return "N/A";
@@ -71,14 +76,14 @@ public class UserTicket {
         return this.issuedDate.format(ISSUED_DATE_FORMAT);
     }
 
-    // --- NEW FORMATTING METHOD for Price ---
+
     public String getFormattedPrice() {
         if (this.price == null) {
             return "0 VND";
         }
-        // Format to Vietnamese Dong (VND)
+
         NumberFormat nf = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-        // Use a common symbol or explicit text (e.g., VND)
+
         return nf.format(this.price).replace("₫", "VND");
     }
 }

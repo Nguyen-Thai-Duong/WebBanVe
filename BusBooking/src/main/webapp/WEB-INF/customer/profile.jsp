@@ -29,6 +29,23 @@
     String fullNameValue = prefillFullName != null ? prefillFullName : profileUser.getFullName();
     String phoneValue = prefillPhone != null ? prefillPhone : profileUser.getPhoneNumber();
     String addressValue = prefillAddress != null ? prefillAddress : profileUser.getAddress();
+
+
+    String profileUpdateSuccess = (String) session.getAttribute("profileUpdateSuccess");
+    if (profileUpdateSuccess != null) session.removeAttribute("profileUpdateSuccess");
+
+    String reviewSuccess = (String) session.getAttribute("reviewSuccess");
+    String reviewError = (String) session.getAttribute("reviewError");
+
+    // Xóa ngay lập tức để thông báo không hiển thị lại khi refresh
+    if (reviewSuccess != null) session.removeAttribute("reviewSuccess");
+    if (reviewError != null) session.removeAttribute("reviewError");
+
+    // Đặt lại các biến này vào request để JSTL có thể đọc dễ dàng hơn
+    request.setAttribute("reviewSuccess", reviewSuccess);
+    request.setAttribute("reviewError", reviewError);
+    request.setAttribute("profileUpdateSuccess", profileUpdateSuccess);
+    // =======================================================
 %>
 <!DOCTYPE html>
 <html lang="vi" class="light-style layout-menu-fixed" dir="ltr" data-theme="theme-default"
@@ -123,14 +140,11 @@
                         </div>
                     </div>
 
-                    <div class="card mb-4">
-                        <h5 class="card-header">Vé xe đã mua</h5>
-                        <div class="card-body">
-                            <%-- Check if the userTickets list passed from the controller is empty or not --%>
-                            <c:choose>
-                                <c:when test="${not empty userTickets}">
-                                    <div class="table-responsive text-nowrap">
-                                        <table class="table table-hover">
+                    <div class="card-body">
+                        <c:choose>
+                            <c:when test="${not empty userTickets}">
+                                <div class="table-responsive text-nowrap">
+                                    <table class="table table-hover">
                                         <thead>
                                         <tr>
                                             <th>Mã vé</th>
@@ -139,7 +153,7 @@
                                             <th>Giờ khởi hành</th>
                                             <th>Ngày đặt</th>
                                             <th>Trạng thái</th>
-                                            <th>Chi tiết</th>
+                                            <th>Thao tác</th> <%-- Cột thao tác chung --%>
                                         </tr>
                                         </thead>
                                         <tbody class="table-border-bottom-0">
@@ -151,7 +165,7 @@
                                                 <td>${ticket.formattedDepartureTime}</td>
                                                 <td>${ticket.formattedIssuedDate}</td>
                                                 <td>
-                                                        <%-- ... Status Badge Logic ... --%>
+                                                        <%-- Logic hiển thị trạng thái --%>
                                                     <c:choose>
                                                         <c:when test="${ticket.ticketStatus eq 'Issued'}">
                                                             <c:set var="badgeClass" value="bg-label-success" />
@@ -159,40 +173,55 @@
                                                         <c:when test="${ticket.ticketStatus eq 'Cancelled'}">
                                                             <c:set var="badgeClass" value="bg-label-danger" />
                                                         </c:when>
+                                                        <c:when test="${ticket.ticketStatus eq 'Used'}">
+                                                            <c:set var="badgeClass" value="bg-label-primary" />
+                                                        </c:when>
                                                         <c:otherwise>
                                                             <c:set var="badgeClass" value="bg-label-warning" />
                                                         </c:otherwise>
                                                     </c:choose>
                                                     <span class="badge ${badgeClass} me-1">${ticket.ticketStatus}</span>
                                                 </td>
-                                                <td> <%-- NEW DETAIL BUTTON CELL --%>
-                                                    <button type="button" class="btn btn-sm btn-outline-primary btn-icon"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#ticketDetailModal"
-                                                            data-ticket-number="${ticket.ticketNumber}"
-                                                            data-issued-date="${ticket.formattedIssuedDate}"
-                                                            data-depart-time="${ticket.formattedDepartureTime}"
-                                                            data-price="${ticket.formattedPrice}"
-                                                            data-origin="${ticket.origin}"
-                                                            data-destination="${ticket.destination}"
-                                                            data-seat-number="${ticket.seatNumber}"
-                                                            data-operator-code="${ticket.vehicleOperatorEmployeeCode}"
-                                                            data-status="${ticket.ticketStatus}"
-                                                    >
-                                                        <i class='bx bx-search-alt-2'></i>
-                                                    </button>
+                                                <td> <%-- CỘT NÚT HÀNH ĐỘNG --%>
+                                                    <div class="d-flex gap-2">
+                                                            <%-- 1. NÚT XEM CHI TIẾT (Detail) --%>
+                                                        <button type="button" class="btn btn-sm btn-outline-info btn-icon"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#ticketDetailModal"
+                                                                data-ticket-number="${ticket.ticketNumber}"
+                                                                data-issued-date="${ticket.formattedIssuedDate}"
+                                                                data-depart-time="${ticket.formattedDepartureTime}"
+                                                                data-price="${ticket.formattedPrice}"
+                                                                data-origin="${ticket.origin}"
+                                                                data-destination="${ticket.destination}"
+                                                                data-seat-number="${ticket.seatNumber}"
+                                                                data-operator-code="${ticket.vehicleOperatorEmployeeCode}"
+                                                                data-status="${ticket.ticketStatus}"
+                                                                title="Chi tiết vé"
+                                                        >
+                                                            <i class='bx bx-search-alt-2'></i>
+                                                        </button>
+
+                                                            <%-- 2. NÚT ĐÁNH GIÁ (Review) - CHỈ HIỂN THỊ KHI STATUS LÀ "Used" --%>
+                                                        <c:if test="${ticket.ticketStatus eq 'Used'}">
+                                                            <a href="<%= contextPath %>/customer/review?tripId=${ticket.tripId}"
+                                                               class="btn btn-sm btn-outline-warning btn-icon"
+                                                               title="Đánh giá chuyến đi">
+                                                                <i class='bx bxs-star'></i>
+                                                            </a>
+                                                        </c:if>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         </c:forEach>
                                         </tbody>
                                     </table>
-                                    </div>
-                                </c:when>
-                                <c:otherwise>
-                                    <p class="text-muted">Bạn chưa mua vé xe nào.</p>
-                                </c:otherwise>
-                            </c:choose>
-                        </div>
+                                </div>
+                            </c:when>
+                            <c:otherwise>
+                                <p class="text-muted">Bạn chưa mua vé xe nào.</p>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
 
                     <div class="card">
@@ -249,17 +278,45 @@
     </div>
 </div>
 
+<c:if test="${not empty profileUpdateSuccess}">
+    <div class="alert alert-success alert-dismissible" role="alert">
+        <i class='bx bx-check-circle me-1'></i>
+            ${profileUpdateSuccess}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</c:if>
+
+<c:if test="${not empty reviewSuccess}">
+    <div class="alert alert-success alert-dismissible" role="alert">
+        <i class='bx bx-check-circle me-1'></i>
+            ${reviewSuccess}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</c:if>
+
+<c:if test="${not empty reviewError || not empty errorMessage}">
+    <div class="alert alert-danger alert-dismissible" role="alert">
+        <i class='bx bx-error-alt me-1'></i>
+        <c:choose>
+            <c:when test="${not empty reviewError}">${reviewError}</c:when>
+            <c:otherwise>${errorMessage}</c:otherwise>
+        </c:choose>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</c:if>
+
+<h4 class="fw-bold py-3 mb-4"><span class="text-muted fw-light">Khách hàng /</span> Thông tin cá nhân</h4>
+
+<%-- JavaScript để điền dữ liệu vào modal chi tiết (đặt bên trong thẻ <script> trước </body>) --%>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const ticketDetailModal = document.getElementById('ticketDetailModal');
 
-        // Listen for the modal to be shown (Bootstrap event)
         if (ticketDetailModal) {
             ticketDetailModal.addEventListener('show.bs.modal', function (event) {
-                // Button that triggered the modal
                 const button = event.relatedTarget;
 
-                // Extract info from data-bs-* attributes
+                // Trích xuất thông tin từ các thuộc tính data-bs-*
                 const ticketNumber = button.getAttribute('data-ticket-number');
                 const issuedDate = button.getAttribute('data-issued-date');
                 const departTime = button.getAttribute('data-depart-time');
@@ -270,9 +327,8 @@
                 const operatorCode = button.getAttribute('data-operator-code');
                 const status = button.getAttribute('data-status');
 
-                // Update the modal's content.
+                // Cập nhật nội dung của modal.
                 document.getElementById('detail-ticket-number').textContent = ticketNumber;
-                // Combine Origin and Destination for the route display
                 document.getElementById('detail-route').textContent = origin + ' -> ' + destination;
                 document.getElementById('detail-depart-time').textContent = departTime;
                 document.getElementById('detail-issued-date').textContent = issuedDate;
@@ -281,13 +337,12 @@
                 document.getElementById('detail-operator-code').textContent = operatorCode;
                 document.getElementById('detail-status').textContent = status;
 
-                // Optional: Update modal title with ticket number
+                // Cập nhật tiêu đề modal
                 document.getElementById('ticketDetailModalLabel').textContent = 'Chi tiết vé xe: ' + ticketNumber;
             });
         }
     });
 </script>
-
 
 <script src="<%= vendorPath %>/libs/popper/popper.js"></script>
 <script src="<%= vendorPath %>/js/bootstrap.js"></script>

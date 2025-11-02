@@ -20,7 +20,6 @@ public class UserTicketsDAO {
 
     private static final Logger LOGGER = Logger.getLogger(TicketDAO.class.getName());
 
-    // This is the correct, verified SQL query.
     // It joins BOOKING, TICKET, TRIP, and ROUTE to get all required details.
     private static final String FIND_TICKETS_BY_USER_ID =
             "SELECT " +
@@ -30,10 +29,11 @@ public class UserTicketsDAO {
                     "    B.SeatNumber, " +
                     "    R.Origin + ' -> ' + R.Destination AS RouteDetails, " +
                     "    TR.DepartureTime, " +
-                    "    TR.Price, " + // NEW
-                    "    R.Origin, " + // NEW
-                    "    R.Destination, " + // NEW
-                    "    V.EmployeeCode AS OperatorCode " + // NEW: Assuming Vehicle table has EmployeeCode
+                    "    TR.Price, " +
+                    "    R.Origin, " +
+                    "    R.Destination, " +
+                    "    V.EmployeeCode AS OperatorCode, " +
+                    "    TR.TripID " +
                     "FROM " +
                     "    BOOKING B " +
                     "JOIN " +
@@ -87,12 +87,17 @@ public class UserTicketsDAO {
         String destination = rs.getString("Destination");
         String operatorCode = rs.getString("OperatorCode");
 
+        Integer tripId = rs.getInt("TripID");
+        if (rs.wasNull()) {
+            tripId = null;
+        }
+
         LocalDateTime issuedDate = toLocalDateTime(rs.getTimestamp("IssuedDate"));
         LocalDateTime departureTime = toLocalDateTime(rs.getTimestamp("DepartureTime"));
 
-        // UPDATED DTO INSTANTIATION
+
         return new UserTicket(ticketNumber, routeDetails, departureTime, issuedDate,
-                ticketStatus, seatNumber, price, origin, destination, operatorCode);
+                ticketStatus, seatNumber, price, origin, destination, operatorCode, tripId);
     }
 
     // Utility method to convert SQL Timestamp to LocalDateTime
