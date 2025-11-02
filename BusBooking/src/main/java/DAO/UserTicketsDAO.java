@@ -2,6 +2,8 @@ package DAO;
 
 import DBContext.DBContext;
 import dto.UserTicket;
+
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -27,7 +29,11 @@ public class UserTicketsDAO {
                     "    T.IssuedDate, " +
                     "    B.SeatNumber, " +
                     "    R.Origin + ' -> ' + R.Destination AS RouteDetails, " +
-                    "    TR.DepartureTime " +
+                    "    TR.DepartureTime, " +
+                    "    TR.Price, " + // NEW
+                    "    R.Origin, " + // NEW
+                    "    R.Destination, " + // NEW
+                    "    V.EmployeeCode AS OperatorCode " + // NEW: Assuming Vehicle table has EmployeeCode
                     "FROM " +
                     "    BOOKING B " +
                     "JOIN " +
@@ -36,11 +42,10 @@ public class UserTicketsDAO {
                     "    TRIP TR ON B.TripID = TR.TripID " +
                     "JOIN " +
                     "    ROUTE R ON TR.RouteID = R.RouteID " +
+                    "JOIN " +
+                    "    VEHICLE V ON TR.VehicleID = V.VehicleID " +
                     "WHERE " +
-                    "    B.UserID = ? " + // This is the correct FK based on your schema [cite: 70]
-                    "ORDER BY " +
-                    "    TR.DepartureTime DESC";
-
+                    "    B.UserID = ?";
     /**
      * Retrieves all purchased tickets for a specific user ID.
      * @param userId The ID of the user.
@@ -76,10 +81,18 @@ public class UserTicketsDAO {
         String routeDetails = rs.getString("RouteDetails");
         String seatNumber = rs.getString("SeatNumber");
 
+        // Fetch new detail fields
+        BigDecimal price = rs.getBigDecimal("Price");
+        String origin = rs.getString("Origin");
+        String destination = rs.getString("Destination");
+        String operatorCode = rs.getString("OperatorCode");
+
         LocalDateTime issuedDate = toLocalDateTime(rs.getTimestamp("IssuedDate"));
         LocalDateTime departureTime = toLocalDateTime(rs.getTimestamp("DepartureTime"));
 
-        return new UserTicket(ticketNumber, routeDetails, departureTime, issuedDate, ticketStatus, seatNumber);
+        // UPDATED DTO INSTANTIATION
+        return new UserTicket(ticketNumber, routeDetails, departureTime, issuedDate,
+                ticketStatus, seatNumber, price, origin, destination, operatorCode);
     }
 
     // Utility method to convert SQL Timestamp to LocalDateTime

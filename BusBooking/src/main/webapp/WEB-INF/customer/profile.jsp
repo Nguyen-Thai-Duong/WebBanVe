@@ -131,44 +131,61 @@
                                 <c:when test="${not empty userTickets}">
                                     <div class="table-responsive text-nowrap">
                                         <table class="table table-hover">
-                                            <thead>
+                                        <thead>
+                                        <tr>
+                                            <th>Mã vé</th>
+                                            <th>Tuyến đường</th>
+                                            <th>Ghế</th>
+                                            <th>Giờ khởi hành</th>
+                                            <th>Ngày đặt</th>
+                                            <th>Trạng thái</th>
+                                            <th>Chi tiết</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="table-border-bottom-0">
+                                        <c:forEach var="ticket" items="${userTickets}">
                                             <tr>
-                                                <th>Mã vé</th>
-                                                <th>Chuyến đi</th>
-                                                <th>Ghế</th>
-                                                <th>Giờ khởi hành</th>
-                                                <th>Ngày mua</th>
-                                                <th>Trạng thái</th>
-                                            </tr>
-                                            </thead>
-                                            <tbody class="table-border-bottom-0">
-                                                <%-- Loop over each ticket in the list --%>
-                                            <c:forEach var="ticket" items="${userTickets}">
-                                                <tr>
-                                                    <td><i class="bx bx-bus-marker bx-sm text-info me-3"></i> <strong>${ticket.ticketNumber}</strong></td>
-                                                    <td>${ticket.routeDetails}</td>
-                                                    <td><span class="badge bg-label-info me-1">${ticket.seatNumber}</span></td>
-                                                    <td>
-                                                            <%-- Format the LocalDateTime object --%>
-                                                            ${ticket.formattedDepartureTime}
-                                                    </td>
-                                                    <td>
-                                                            ${ticket.formattedIssuedDate}
-                                                    </td>
-                                                    <td>
-                                                        <c:set var="badgeClass" value="bg-label-success" />
-                                                        <c:if test="${ticket.ticketStatus eq 'Pending' or ticket.ticketStatus eq 'Issued'}">
-                                                            <c:set var="badgeClass" value="bg-label-warning" />
-                                                        </c:if>
-                                                        <c:if test="${ticket.ticketStatus eq 'Void'}">
+                                                <td><i class="bx bx-bus-marker bx-sm text-info me-3"></i> <strong>${ticket.ticketNumber}</strong></td>
+                                                <td>${ticket.routeDetails}</td>
+                                                <td><span class="badge bg-label-info me-1">${ticket.seatNumber}</span></td>
+                                                <td>${ticket.formattedDepartureTime}</td>
+                                                <td>${ticket.formattedIssuedDate}</td>
+                                                <td>
+                                                        <%-- ... Status Badge Logic ... --%>
+                                                    <c:choose>
+                                                        <c:when test="${ticket.ticketStatus eq 'Issued'}">
+                                                            <c:set var="badgeClass" value="bg-label-success" />
+                                                        </c:when>
+                                                        <c:when test="${ticket.ticketStatus eq 'Cancelled'}">
                                                             <c:set var="badgeClass" value="bg-label-danger" />
-                                                        </c:if>
-                                                        <span class="badge ${badgeClass} me-1">${ticket.ticketStatus}</span>
-                                                    </td>
-                                                </tr>
-                                            </c:forEach>
-                                            </tbody>
-                                        </table>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <c:set var="badgeClass" value="bg-label-warning" />
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                    <span class="badge ${badgeClass} me-1">${ticket.ticketStatus}</span>
+                                                </td>
+                                                <td> <%-- NEW DETAIL BUTTON CELL --%>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary btn-icon"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#ticketDetailModal"
+                                                            data-ticket-number="${ticket.ticketNumber}"
+                                                            data-issued-date="${ticket.formattedIssuedDate}"
+                                                            data-depart-time="${ticket.formattedDepartureTime}"
+                                                            data-price="${ticket.formattedPrice}"
+                                                            data-origin="${ticket.origin}"
+                                                            data-destination="${ticket.destination}"
+                                                            data-seat-number="${ticket.seatNumber}"
+                                                            data-operator-code="${ticket.vehicleOperatorEmployeeCode}"
+                                                            data-status="${ticket.ticketStatus}"
+                                                    >
+                                                        <i class='bx bx-search-alt-2'></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </c:forEach>
+                                        </tbody>
+                                    </table>
                                     </div>
                                 </c:when>
                                 <c:otherwise>
@@ -190,6 +207,87 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="ticketDetailModal" tabindex="-1" aria-labelledby="ticketDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ticketDetailModalLabel">Chi tiết vé xe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Mã vé:</dt>
+                    <dd class="col-sm-7" id="detail-ticket-number"></dd>
+
+                    <dt class="col-sm-5">Tuyến đường:</dt>
+                    <dd class="col-sm-7" id="detail-route"></dd>
+
+                    <dt class="col-sm-5">Giờ khởi hành:</dt>
+                    <dd class="col-sm-7" id="detail-depart-time"></dd>
+
+                    <dt class="col-sm-5">Ngày đặt (Phát hành):</dt>
+                    <dd class="col-sm-7" id="detail-issued-date"></dd>
+
+                    <dt class="col-sm-5">Giá vé:</dt>
+                    <dd class="col-sm-7 text-success" id="detail-price"></dd>
+
+                    <dt class="col-sm-5">Ghế số:</dt>
+                    <dd class="col-sm-7" id="detail-seat-number"></dd>
+
+                    <dt class="col-sm-5">Trạng thái:</dt>
+                    <dd class="col-sm-7" id="detail-status"></dd>
+
+                    <dt class="col-sm-5">Mã nhân viên lái xe:</dt>
+                    <dd class="col-sm-7" id="detail-operator-code"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ticketDetailModal = document.getElementById('ticketDetailModal');
+
+        // Listen for the modal to be shown (Bootstrap event)
+        if (ticketDetailModal) {
+            ticketDetailModal.addEventListener('show.bs.modal', function (event) {
+                // Button that triggered the modal
+                const button = event.relatedTarget;
+
+                // Extract info from data-bs-* attributes
+                const ticketNumber = button.getAttribute('data-ticket-number');
+                const issuedDate = button.getAttribute('data-issued-date');
+                const departTime = button.getAttribute('data-depart-time');
+                const price = button.getAttribute('data-price');
+                const origin = button.getAttribute('data-origin');
+                const destination = button.getAttribute('data-destination');
+                const seatNumber = button.getAttribute('data-seat-number');
+                const operatorCode = button.getAttribute('data-operator-code');
+                const status = button.getAttribute('data-status');
+
+                // Update the modal's content.
+                document.getElementById('detail-ticket-number').textContent = ticketNumber;
+                // Combine Origin and Destination for the route display
+                document.getElementById('detail-route').textContent = origin + ' -> ' + destination;
+                document.getElementById('detail-depart-time').textContent = departTime;
+                document.getElementById('detail-issued-date').textContent = issuedDate;
+                document.getElementById('detail-price').textContent = price;
+                document.getElementById('detail-seat-number').textContent = seatNumber;
+                document.getElementById('detail-operator-code').textContent = operatorCode;
+                document.getElementById('detail-status').textContent = status;
+
+                // Optional: Update modal title with ticket number
+                document.getElementById('ticketDetailModalLabel').textContent = 'Chi tiết vé xe: ' + ticketNumber;
+            });
+        }
+    });
+</script>
+
 
 <script src="<%= vendorPath %>/libs/popper/popper.js"></script>
 <script src="<%= vendorPath %>/js/bootstrap.js"></script>
