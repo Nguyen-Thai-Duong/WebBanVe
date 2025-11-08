@@ -3,6 +3,7 @@ package DAO;
 import DBContext.DBContext;
 import dto.BookingAdminView;
 import dto.TripOption;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,8 +26,7 @@ public class BookingDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingDAO.class);
 
-    private static final String BASE_SELECT =
-        "SELECT b.BookingID, b.TripID, b.UserID, b.GuestPhoneNumber, b.GuestEmail, "
+    private static final String BASE_SELECT = "SELECT b.BookingID, b.TripID, b.UserID, b.GuestPhoneNumber, b.GuestEmail, "
             + "b.BookingDate, b.BookingStatus, b.SeatNumber, b.SeatStatus, b.TTL_Expiry, "
             + "trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, route.DurationMinutes, route.RouteStatus, veh.LicensePlate, "
             + "cust.FullName AS CustomerName, cust.Email AS CustomerEmail, cust.PhoneNumber AS CustomerPhone "
@@ -176,7 +176,7 @@ public class BookingDAO {
     }
 
     public List<TripOption> findTripOptions() {
-    String sql = "SELECT trip.TripID, trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, route.DurationMinutes, veh.LicensePlate "
+        String sql = "SELECT trip.TripID, trip.DepartureTime, trip.ArrivalTime, route.Origin, route.Destination, route.DurationMinutes, veh.LicensePlate "
                 + "FROM TRIP trip "
                 + "JOIN ROUTE route ON trip.RouteID = route.RouteID "
                 + "JOIN VEHICLE veh ON trip.VehicleID = veh.VehicleID "
@@ -317,5 +317,107 @@ public class BookingDAO {
             return "Booked";
         }
         return status;
+    }
+
+    public int countTodayBookingsByOperator(int operatorId) {
+        String sql = "SELECT COUNT(*) FROM BOOKING b "
+                + "JOIN TRIP t ON b.TripID = t.TripID "
+                + "WHERE t.OperatorID = ? AND CAST(b.BookingDate AS DATE) = CAST(GETDATE() AS DATE)";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when counting today's bookings for operator {}", operatorId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to count today's bookings for operator {}", operatorId, ex);
+        }
+        return 0;
+    }
+
+    public int countMonthlyBookingsByOperator(int operatorId) {
+        String sql = "SELECT COUNT(*) FROM BOOKING b "
+                + "JOIN TRIP t ON b.TripID = t.TripID "
+                + "WHERE t.OperatorID = ? AND YEAR(b.BookingDate) = YEAR(GETDATE()) AND MONTH(b.BookingDate) = MONTH(GETDATE())";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when counting monthly bookings for operator {}", operatorId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to count monthly bookings for operator {}", operatorId, ex);
+        }
+        return 0;
+    }
+
+    public BigDecimal calculateMonthlyRevenueByOperator(int operatorId) {
+        String sql = "SELECT SUM(t.Price) FROM BOOKING b "
+                + "JOIN TRIP t ON b.TripID = t.TripID "
+                + "WHERE t.OperatorID = ? AND YEAR(b.BookingDate) = YEAR(GETDATE()) "
+                + "AND MONTH(b.BookingDate) = MONTH(GETDATE()) AND b.BookingStatus = 'Confirmed'";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when calculating monthly revenue for operator {}",
+                        operatorId);
+                return BigDecimal.ZERO;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        BigDecimal revenue = rs.getBigDecimal(1);
+                        return revenue != null ? revenue : BigDecimal.ZERO;
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to calculate monthly revenue for operator {}", operatorId, ex);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public List<String> findBookedSeatsForTrip(int tripId) {
+        String sql = "SELECT SeatNumber FROM BOOKING WHERE TripID = ? AND SeatStatus IN ('Booked', 'Confirmed')";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when loading booked seats for trip {}", tripId);
+                return Collections.emptyList();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, tripId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<String> bookedSeats = new ArrayList<>();
+                    while (rs.next()) {
+                        String seatNumber = rs.getString("SeatNumber");
+                        if (seatNumber != null && !seatNumber.isBlank()) {
+                            bookedSeats.add(seatNumber);
+                        }
+                    }
+                    return bookedSeats;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to load booked seats for trip {}", tripId, ex);
+            return Collections.emptyList();
+        }
     }
 }

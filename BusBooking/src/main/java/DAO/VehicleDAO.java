@@ -26,12 +26,11 @@ public class VehicleDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(VehicleDAO.class);
 
-    private static final String VEHICLE_SELECT =
-            "SELECT v.VehicleID, v.EmployeeCode, v.LicensePlate, v.Model, v.Capacity, v.DateAdded, "
-                    + "v.MaintenanceIntervalDays, v.LastMaintenanceDate, v.LastRepairDate, v.Details, "
-                    + "v.VehicleStatus, v.CurrentCondition, "
-                    + "u.UserID, u.FullName, u.Email, u.PhoneNumber, u.Status AS OperatorStatus "
-                    + "FROM VEHICLE v LEFT JOIN [USER] u ON v.EmployeeCode = u.EmployeeCode";
+    private static final String VEHICLE_SELECT = "SELECT v.VehicleID, v.EmployeeCode, v.LicensePlate, v.Model, v.Capacity, v.DateAdded, "
+            + "v.MaintenanceIntervalDays, v.LastMaintenanceDate, v.LastRepairDate, v.Details, "
+            + "v.VehicleStatus, v.CurrentCondition, "
+            + "u.UserID, u.FullName, u.Email, u.PhoneNumber, u.Status AS OperatorStatus "
+            + "FROM VEHICLE v LEFT JOIN [USER] u ON v.EmployeeCode = u.EmployeeCode";
 
     public List<Vehicle> findAll() {
         String sql = VEHICLE_SELECT + " ORDER BY v.DateAdded DESC";
@@ -227,6 +226,51 @@ public class VehicleDAO {
         } else {
             ps.setNull(index, Types.DATE);
         }
+    }
+
+    public int countVehiclesByOperator(int operatorId) {
+        String sql = "SELECT COUNT(*) FROM VEHICLE v JOIN [USER] u ON v.EmployeeCode = u.EmployeeCode WHERE u.UserID = ?";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when counting vehicles for operator {}", operatorId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to count vehicles for operator {}", operatorId, ex);
+        }
+        return 0;
+    }
+
+    public int countActiveVehiclesByOperator(int operatorId) {
+        String sql = "SELECT COUNT(*) FROM VEHICLE v JOIN [USER] u ON v.EmployeeCode = u.EmployeeCode " +
+                "WHERE u.UserID = ? AND v.VehicleStatus = 'Available'";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when counting active vehicles for operator {}", operatorId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to count active vehicles for operator {}", operatorId, ex);
+        }
+        return 0;
     }
 
     private LocalDateTime getLocalDateTime(Timestamp timestamp) {

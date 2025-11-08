@@ -28,14 +28,75 @@ public class TripDAO {
     private static final Logger LOGGER = Logger.getLogger(TripDAO.class.getName());
 
     private static final String BASE_SELECT = "SELECT "
-        + "t.TripID, t.RouteID, t.DepartureTime, t.ArrivalTime, t.Price, t.VehicleID, t.OperatorID, t.TripStatus, "
-        + "r.Origin, r.Destination, r.Distance, r.DurationMinutes, r.RouteStatus, "
+            + "t.TripID, t.RouteID, t.DepartureTime, t.ArrivalTime, t.Price, t.VehicleID, t.OperatorID, t.TripStatus, "
+            + "r.Origin, r.Destination, r.Distance, r.DurationMinutes, r.RouteStatus, "
             + "v.LicensePlate, v.Model, v.Capacity, "
             + "u.FullName AS OperatorName, u.Email AS OperatorEmail, u.EmployeeCode "
             + "FROM TRIP t "
             + "INNER JOIN ROUTE r ON t.RouteID = r.RouteID "
             + "INNER JOIN VEHICLE v ON t.VehicleID = v.VehicleID "
             + "INNER JOIN [USER] u ON t.OperatorID = u.UserID";
+
+    public List<Trip> searchTrips(String origin, String destination, LocalDateTime searchDate) {
+        List<String> conditions = new ArrayList<>();
+        List<Object> parameters = new ArrayList<>();
+
+        if (origin != null && !origin.isEmpty()) {
+            conditions.add("r.Origin LIKE ?");
+            parameters.add("%" + origin + "%");
+        }
+
+        if (destination != null && !destination.isEmpty()) {
+            conditions.add("r.Destination LIKE ?");
+            parameters.add("%" + destination + "%");
+        }
+
+        if (searchDate != null) {
+            conditions.add("CONVERT(date, t.DepartureTime) = CONVERT(date, ?)");
+            parameters.add(Timestamp.valueOf(searchDate));
+        }
+
+        // Only show upcoming trips
+        conditions.add("t.DepartureTime >= ?");
+        parameters.add(Timestamp.valueOf(LocalDateTime.now()));
+
+        // Only show active trips and routes
+        conditions.add("t.TripStatus = 'Available'");
+        conditions.add("r.RouteStatus = 'Active'");
+
+        String sql = BASE_SELECT;
+        if (!conditions.isEmpty()) {
+            sql += " WHERE " + String.join(" AND ", conditions);
+        }
+        sql += " ORDER BY t.DepartureTime ASC";
+
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null when searching trips");
+                return Collections.emptyList();
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                for (int i = 0; i < parameters.size(); i++) {
+                    if (parameters.get(i) instanceof String) {
+                        ps.setString(i + 1, (String) parameters.get(i));
+                    } else if (parameters.get(i) instanceof Timestamp) {
+                        ps.setTimestamp(i + 1, (Timestamp) parameters.get(i));
+                    }
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<Trip> trips = new ArrayList<>();
+                    while (rs.next()) {
+                        trips.add(mapTrip(rs));
+                    }
+                    return trips;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to search trips", ex);
+            return Collections.emptyList();
+        }
+    }
 
     public List<Trip> findAll() {
         String sql = BASE_SELECT + " ORDER BY t.DepartureTime ASC";
@@ -47,11 +108,11 @@ public class TripDAO {
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
                     ResultSet rs = ps.executeQuery()) {
-            List<Trip> trips = new ArrayList<>();
-            while (rs.next()) {
-                trips.add(mapTrip(rs));
-            }
-            return trips;
+                List<Trip> trips = new ArrayList<>();
+                while (rs.next()) {
+                    trips.add(mapTrip(rs));
+                }
+                return trips;
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to load trips", ex);
@@ -68,12 +129,12 @@ public class TripDAO {
                 return null;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, tripId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapTrip(rs);
+                ps.setInt(1, tripId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return mapTrip(rs);
+                    }
                 }
-            }
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to find trip with id " + tripId, ex);
@@ -91,16 +152,16 @@ public class TripDAO {
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            mapStatement(ps, trip);
-            int affected = ps.executeUpdate();
-            if (affected > 0) {
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) {
-                        trip.setTripId(keys.getInt(1));
+                mapStatement(ps, trip);
+                int affected = ps.executeUpdate();
+                if (affected > 0) {
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        if (keys.next()) {
+                            trip.setTripId(keys.getInt(1));
+                        }
                     }
                 }
-            }
-            return affected > 0;
+                return affected > 0;
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to insert trip", ex);
@@ -121,9 +182,9 @@ public class TripDAO {
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            mapStatement(ps, trip);
-            ps.setInt(8, trip.getTripId());
-            return ps.executeUpdate() > 0;
+                mapStatement(ps, trip);
+                ps.setInt(8, trip.getTripId());
+                return ps.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to update trip with id " + trip.getTripId(), ex);
@@ -140,8 +201,8 @@ public class TripDAO {
                 return false;
             }
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, tripId);
-            return ps.executeUpdate() > 0;
+                ps.setInt(1, tripId);
+                return ps.executeUpdate() > 0;
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to delete trip with id " + tripId, ex);
@@ -162,21 +223,21 @@ public class TripDAO {
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
                     ResultSet rs = ps.executeQuery()) {
-            List<Route> routes = new ArrayList<>();
-            while (rs.next()) {
-                Route route = new Route();
-                route.setRouteId(rs.getInt("RouteID"));
-                route.setOrigin(rs.getString("Origin"));
-                route.setDestination(rs.getString("Destination"));
-                route.setDistance(rs.getBigDecimal("Distance"));
-                int duration = rs.getInt("DurationMinutes");
-                boolean durationIsNull = rs.wasNull();
-                route.setDurationMinutes(durationIsNull ? null : duration);
-                route.setRouteStatus(rs.getString("RouteStatus"));
-                route.setTripCount(rs.getInt("TripCount"));
-                routes.add(route);
-            }
-            return routes;
+                List<Route> routes = new ArrayList<>();
+                while (rs.next()) {
+                    Route route = new Route();
+                    route.setRouteId(rs.getInt("RouteID"));
+                    route.setOrigin(rs.getString("Origin"));
+                    route.setDestination(rs.getString("Destination"));
+                    route.setDistance(rs.getBigDecimal("Distance"));
+                    int duration = rs.getInt("DurationMinutes");
+                    boolean durationIsNull = rs.wasNull();
+                    route.setDurationMinutes(durationIsNull ? null : duration);
+                    route.setRouteStatus(rs.getString("RouteStatus"));
+                    route.setTripCount(rs.getInt("TripCount"));
+                    routes.add(route);
+                }
+                return routes;
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to load routes", ex);
@@ -219,16 +280,16 @@ public class TripDAO {
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
                     ResultSet rs = ps.executeQuery()) {
-            List<Vehicle> vehicles = new ArrayList<>();
-            while (rs.next()) {
-                Vehicle vehicle = new Vehicle();
-                vehicle.setVehicleId(rs.getInt("VehicleID"));
-                vehicle.setLicensePlate(rs.getString("LicensePlate"));
-                vehicle.setModel(rs.getString("Model"));
-                vehicle.setCapacity(rs.getInt("Capacity"));
-                vehicles.add(vehicle);
-            }
-            return vehicles;
+                List<Vehicle> vehicles = new ArrayList<>();
+                while (rs.next()) {
+                    Vehicle vehicle = new Vehicle();
+                    vehicle.setVehicleId(rs.getInt("VehicleID"));
+                    vehicle.setLicensePlate(rs.getString("LicensePlate"));
+                    vehicle.setModel(rs.getString("Model"));
+                    vehicle.setCapacity(rs.getInt("Capacity"));
+                    vehicles.add(vehicle);
+                }
+                return vehicles;
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to load vehicles", ex);
@@ -247,16 +308,16 @@ public class TripDAO {
             }
             try (PreparedStatement ps = conn.prepareStatement(sql);
                     ResultSet rs = ps.executeQuery()) {
-            List<User> operators = new ArrayList<>();
-            while (rs.next()) {
-                User user = new User();
-                user.setUserId(rs.getInt("UserID"));
-                user.setEmployeeCode(rs.getString("EmployeeCode"));
-                user.setFullName(rs.getString("FullName"));
-                user.setEmail(rs.getString("Email"));
-                operators.add(user);
-            }
-            return operators;
+                List<User> operators = new ArrayList<>();
+                while (rs.next()) {
+                    User user = new User();
+                    user.setUserId(rs.getInt("UserID"));
+                    user.setEmployeeCode(rs.getString("EmployeeCode"));
+                    user.setFullName(rs.getString("FullName"));
+                    user.setEmail(rs.getString("Email"));
+                    operators.add(user);
+                }
+                return operators;
             }
         } catch (SQLException ex) {
             LOGGER.log(Level.SEVERE, "Failed to load bus operators", ex);
@@ -318,11 +379,14 @@ public class TripDAO {
     }
 
     /**
-     * Loads upcoming trips assigned to a specific operator, ordered by departure time.
-     * Only trips with departure time after the provided threshold (default now - 1 day) are returned.
+     * Loads upcoming trips assigned to a specific operator, ordered by departure
+     * time.
+     * Only trips with departure time after the provided threshold (default now - 1
+     * day) are returned.
      *
      * @param operatorId the operator (user) identifier
-     * @param maxResults maximum number of trips to return, pass a value <= 0 for no limit
+     * @param maxResults maximum number of trips to return, pass a value <= 0 for no
+     *                   limit
      * @return list of upcoming trips for the operator
      */
     public List<Trip> findUpcomingTripsForOperator(int operatorId, int maxResults) {
@@ -355,6 +419,30 @@ public class TripDAO {
             LOGGER.log(Level.SEVERE, "Failed to load upcoming trips for operator " + operatorId, ex);
             return Collections.emptyList();
         }
+    }
+
+    public int countUpcomingTripsByOperator(int operatorId, LocalDateTime from) {
+        String sql = "SELECT COUNT(*) FROM TRIP WHERE OperatorID = ? AND DepartureTime >= ?";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is null when counting upcoming trips for operator {0}",
+                        operatorId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                ps.setTimestamp(2, Timestamp.valueOf(from));
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.log(Level.SEVERE, "Failed to count upcoming trips for operator " + operatorId, ex);
+        }
+        return 0;
     }
 
     private void setTimestamp(PreparedStatement ps, int index, LocalDateTime value) throws SQLException {

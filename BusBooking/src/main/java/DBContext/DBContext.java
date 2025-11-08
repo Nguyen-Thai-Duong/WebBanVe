@@ -7,13 +7,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Helper for managing JDBC interactions with the BusBooking SQL Server database.
+ * Helper for managing JDBC interactions with the BusBooking SQL Server
+ * database.
  */
 public class DBContext implements AutoCloseable {
 
-    private static final String DEFAULT_URL = "jdbc:sqlserver://localhost:1433;databaseName=BusBookingSystem1;encrypt=false";
+    
+    private static final String DEFAULT_URL = "jdbc:sqlserver://localhost:1433;databaseName=BusBookingSystem;trustServerCertificate=true;encrypt=true";
     private static final String DEFAULT_USER = "sa";
-    private static final String DEFAULT_PASSWORD = "123";
+    private static final String DEFAULT_PASSWORD = "123456";
 
     private Connection connection;
 
