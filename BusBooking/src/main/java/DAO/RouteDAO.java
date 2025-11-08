@@ -23,36 +23,59 @@ public class RouteDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteDAO.class);
     private static final Set<String> ALLOWED_STATUSES = Set.of("Active", "Inactive");
-
     private static final String BASE_SELECT = "SELECT r.RouteID, r.Origin, r.Destination, r.Distance, "
-            + "r.DurationMinutes, r.RouteStatus, COALESCE(tc.TotalTrips, 0) AS TripCount "
+            + "r.DurationMinutes, r.RouteStatus, r.OperatorID, COALESCE(tc.TotalTrips, 0) AS TripCount "
             + "FROM ROUTE r LEFT JOIN (SELECT RouteID, COUNT(*) AS TotalTrips FROM TRIP GROUP BY RouteID) tc "
             + "ON r.RouteID = tc.RouteID";
 
-    public List<Route> findAll() {
-        String sql = BASE_SELECT + " ORDER BY r.Origin, r.Destination";
+    public List<Route> getRoutesByOperatorId(Integer operatorId) {
+        final String sql = "SELECT r.RouteID, r.Origin, r.Destination, r.Distance, "
+                + "r.DurationMinutes, r.RouteStatus, r.OperatorID, COALESCE(tc.TotalTrips, 0) AS TripCount "
+                + "FROM ROUTE r LEFT JOIN (SELECT RouteID, COUNT(*) AS TotalTrips FROM TRIP GROUP BY RouteID) tc "
+                + "ON r.RouteID = tc.RouteID "
+                + "WHERE r.OperatorID = ? ORDER BY r.Origin, r.Destination";
+
+        if (operatorId == null) {
+            return Collections.emptyList();
+        }
+
+        List<Route> routes = new ArrayList<>();
+
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
-                LOGGER.error("Database connection is null when loading routes");
+                LOGGER.error("Database connection is null when fetching routes by operator ID {}", operatorId);
                 return Collections.emptyList();
             }
-            try (PreparedStatement ps = conn.prepareStatement(sql);
-                    ResultSet rs = ps.executeQuery()) {
-                List<Route> routes = new ArrayList<>();
-                while (rs.next()) {
-                    routes.add(mapRoute(rs));
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        Route route = new Route();
+                        route.setRouteId(rs.getInt("RouteID"));
+                        route.setOrigin(rs.getString("Origin"));
+                        route.setDestination(rs.getString("Destination"));
+                        route.setDistance(rs.getBigDecimal("Distance"));
+                        route.setDurationMinutes(rs.getInt("DurationMinutes"));
+                        route.setRouteStatus(rs.getString("RouteStatus"));
+                        route.setOperatorId(rs.getInt("OperatorID"));
+                        route.setTripCount(rs.getInt("TripCount"));
+                        routes.add(route);
+                    }
                 }
-                return routes;
             }
         } catch (SQLException ex) {
-            LOGGER.error("Failed to load routes", ex);
+            LOGGER.error("Failed to fetch routes for operator ID {}", operatorId, ex);
             return Collections.emptyList();
         }
+
+        return routes;
     }
 
     public Route findById(int routeId) {
-    String sql = BASE_SELECT + " WHERE r.RouteID = ?";
+        String sql = BASE_SELECT + " WHERE r.RouteID = ?";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
@@ -74,7 +97,7 @@ public class RouteDAO {
     }
 
     public boolean insert(Route route) {
-        String sql = "INSERT INTO ROUTE (Origin, Destination, Distance, DurationMinutes, RouteStatus) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO ROUTE (Origin, Destination, Distance, DurationMinutes, RouteStatus, OperatorID) VALUES (?, ?, ?, ?, ?, ?)";
         try (DBContext db = new DBContext()) {
             Connection conn = db.getConnection();
             if (conn == null) {
@@ -87,7 +110,8 @@ public class RouteDAO {
                 ps.setString(idx++, route.getDestination());
                 setNullableDecimal(ps, idx++, route.getDistance());
                 setNullableInteger(ps, idx++, route.getDurationMinutes());
-                ps.setString(idx, resolveRouteStatus(route.getRouteStatus()));
+                ps.setString(idx++, resolveRouteStatus(route.getRouteStatus()));
+                ps.setInt(idx, route.getOperatorId());
                 int affected = ps.executeUpdate();
                 if (affected > 0) {
                     try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -159,8 +183,32 @@ public class RouteDAO {
         boolean durationIsNull = rs.wasNull();
         route.setDurationMinutes(durationIsNull ? null : duration);
         route.setRouteStatus(resolveRouteStatus(rs.getString("RouteStatus")));
+        route.setOperatorId(rs.getInt("OperatorID"));
         route.setTripCount(rs.getInt("TripCount"));
         return route;
+    }
+
+    public List<Route> findAll() {
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when fetching all routes");
+                return Collections.emptyList();
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(BASE_SELECT + " ORDER BY r.Origin, r.Destination")) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<Route> routes = new ArrayList<>();
+                    while (rs.next()) {
+                        routes.add(mapRoute(rs));
+                    }
+                    return routes;
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to fetch all routes", ex);
+            return Collections.emptyList();
+        }
     }
 
     private void setNullableDecimal(PreparedStatement ps, int index, BigDecimal value) throws SQLException {
@@ -185,5 +233,49 @@ public class RouteDAO {
         }
         String normalized = status.trim();
         return ALLOWED_STATUSES.contains(normalized) ? normalized : "Active";
+    }
+
+    public int countRoutesByOperator(int operatorId) {
+        String sql = "SELECT COUNT(*) FROM ROUTE WHERE OperatorID = ?";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when counting routes for operator {}", operatorId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to count routes for operator {}", operatorId, ex);
+        }
+        return 0;
+    }
+
+    public int countActiveRoutesByOperator(int operatorId) {
+        String sql = "SELECT COUNT(*) FROM ROUTE WHERE OperatorID = ? AND RouteStatus = 'Active'";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when counting active routes for operator {}", operatorId);
+                return 0;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, operatorId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to count active routes for operator {}", operatorId, ex);
+        }
+        return 0;
     }
 }
