@@ -1,6 +1,8 @@
 package controller.customer;
 
 import DAO.UserDAO;
+import DAO.UserTicketsDAO;
+import dto.UserTicket;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -8,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.List;
 import java.util.regex.Pattern;
 import model.User;
 
@@ -21,6 +24,8 @@ public class CustomerProfileController extends HttpServlet {
     private static final Pattern PHONE_PATTERN = Pattern.compile("^0[0-9]{9,10}$");
 
     private final UserDAO userDAO = new UserDAO();
+
+    private final UserTicketsDAO userTicketsDAO = new UserTicketsDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -41,6 +46,12 @@ public class CustomerProfileController extends HttpServlet {
         if (freshUser != null) {
             mergeIntoSession(sessionUser, freshUser);
         }
+
+        // Fetch the user's tickets using their ID
+        List<UserTicket> userTickets = userTicketsDAO.findTicketsByUserId(sessionUser.getUserId());
+
+        // Add the ticket list to the request so the JSP can access it
+        request.setAttribute("userTickets", userTickets);
 
         Object successFlash = session.getAttribute("profileUpdateSuccess");
         if (successFlash != null) {
@@ -104,6 +115,7 @@ public class CustomerProfileController extends HttpServlet {
 
     private void forwardWithError(String message, User sessionUser,
             HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        List<UserTicket> userTickets = userTicketsDAO.findTicketsByUserId(sessionUser.getUserId());
         request.setAttribute("errorMessage", message);
         request.setAttribute("profileUser", sessionUser);
         request.getRequestDispatcher("/WEB-INF/customer/profile.jsp").forward(request, response);
