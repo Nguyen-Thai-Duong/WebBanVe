@@ -1,6 +1,6 @@
 package controller.busoperator;
 
-import DAO.RouteDAO;
+import DAO.RouteDAOImpl;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -16,10 +16,10 @@ import java.math.BigDecimal;
 
 @WebServlet("/bus-operator/routes/*")
 public class RouteManagementServlet extends HttpServlet {
-    private final RouteDAO routeDAO;
+    private final RouteDAOImpl routeDAO;
 
     public RouteManagementServlet() {
-        this.routeDAO = new RouteDAO();
+        this.routeDAO = new RouteDAOImpl();
     }
 
     @Override
@@ -101,7 +101,7 @@ public class RouteManagementServlet extends HttpServlet {
             route.setRouteStatus("Active");
             route.setOperatorId(operator.getUserId());
 
-            if (routeDAO.insert(route)) {
+            if (routeDAO.addRoute(route)) {
                 response.sendRedirect(request.getContextPath() + "/bus-operator/routes");
             } else {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -147,14 +147,19 @@ public class RouteManagementServlet extends HttpServlet {
                 return;
             }
 
+            User operator = (User) request.getSession().getAttribute("user");
             Route route = new Route();
             route.setRouteId(Integer.parseInt(routeId));
             route.setOrigin(origin);
             route.setDestination(destination);
             route.setDistance(new BigDecimal(distance));
             route.setDurationMinutes(Integer.parseInt(duration));
+            // Needed by RouteDAOImpl.updateRoute (has OperatorID condition)
+            if (operator != null) {
+                route.setOperatorId(operator.getUserId());
+            }
 
-            if (routeDAO.update(route)) {
+            if (routeDAO.updateRoute(route)) {
                 response.sendRedirect(request.getContextPath() + "/bus-operator/routes");
             } else {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -176,7 +181,7 @@ public class RouteManagementServlet extends HttpServlet {
                 return;
             }
 
-            Route route = routeDAO.findById(Integer.parseInt(routeId));
+            Route route = routeDAO.getRouteById(Integer.parseInt(routeId));
             if (route == null) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 response.getWriter().write("Route not found");
@@ -190,7 +195,7 @@ public class RouteManagementServlet extends HttpServlet {
                 return;
             }
 
-            if (routeDAO.delete(Integer.parseInt(routeId))) {
+            if (routeDAO.deleteRoute(Integer.parseInt(routeId))) {
                 response.setStatus(HttpServletResponse.SC_OK);
             } else {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -212,7 +217,7 @@ public class RouteManagementServlet extends HttpServlet {
                 return;
             }
 
-            Route route = routeDAO.findById(Integer.parseInt(routeId));
+            Route route = routeDAO.getRouteById(Integer.parseInt(routeId));
             if (route == null) {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 response.getWriter().write("Route not found");
@@ -220,8 +225,7 @@ public class RouteManagementServlet extends HttpServlet {
             }
 
             String newStatus = "Active".equals(route.getRouteStatus()) ? "Inactive" : "Active";
-            route.setRouteStatus(newStatus);
-            if (routeDAO.update(route)) {
+            if (routeDAO.updateRouteStatus(route.getRouteId(), newStatus)) {
                 response.setStatus(HttpServletResponse.SC_OK);
             } else {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
