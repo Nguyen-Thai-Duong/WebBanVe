@@ -44,8 +44,7 @@ public class BookingDAO {
                 LOGGER.error("Database connection is null when loading bookings");
                 return Collections.emptyList();
             }
-            try (PreparedStatement ps = conn.prepareStatement(sql);
-                    ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
                 List<BookingAdminView> bookings = new ArrayList<>();
                 while (rs.next()) {
                     bookings.add(mapBooking(rs));
@@ -187,8 +186,7 @@ public class BookingDAO {
                 LOGGER.error("Database connection is null when loading trip options for bookings");
                 return Collections.emptyList();
             }
-            try (PreparedStatement ps = conn.prepareStatement(sql);
-                    ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
                 List<TripOption> options = new ArrayList<>();
                 while (rs.next()) {
                     TripOption option = new TripOption();
@@ -224,8 +222,7 @@ public class BookingDAO {
                 LOGGER.error("Database connection is null when loading customer options for bookings");
                 return Collections.emptyList();
             }
-            try (PreparedStatement ps = conn.prepareStatement(sql);
-                    ResultSet rs = ps.executeQuery()) {
+            try (PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
                 List<User> customers = new ArrayList<>();
                 while (rs.next()) {
                     User user = new User();
@@ -418,6 +415,175 @@ public class BookingDAO {
         } catch (SQLException ex) {
             LOGGER.error("Failed to load booked seats for trip {}", tripId, ex);
             return Collections.emptyList();
+        }
+    }
+
+    /**
+     * Cố gắng "giữ" một ghế bằng cách tạo một bản ghi booking tạm thời. Hàm này
+     * sẽ thất bại nếu ghế đã được giữ hoặc đã được đặt.
+     *
+     * @param tripId Chuyến đi
+     * @param seatName Tên ghế (ví dụ "A1")
+     * @param sessionId ID của phiên người dùng
+     * @param holdDurationMinutes Thời gian giữ (ví dụ 10 phút)
+     * @return Trả về BookingID nếu giữ thành công, ngược lại trả về NULL.
+     */
+    public Integer holdSeat(int tripId, String seatName, String sessionId, int holdDurationMinutes) {
+        // Câu SQL này kiểm tra xem có ghế nào đã 'Booked'/'Confirmed' HOẶC
+        // đang 'Pending'/'Held' mà CHƯA HẾT HẠN hay không.
+        String sqlCheck = "SELECT COUNT(*) FROM BOOKING "
+                + "WHERE TripID = ? AND SeatNumber = ? "
+                + "AND ( "
+                + "  BookingStatus IN ('Confirmed', 'Booked') OR " // Đã đặt
+                + "  (BookingStatus = 'Pending' AND TTL_Expiry > GETDATE()) " // Đang giữ và chưa hết hạn
+                + ")";
+
+        String sqlInsert = "INSERT INTO BOOKING (TripID, GuestEmail, BookingDate, BookingStatus, SeatNumber, SeatStatus, TTL_Expiry) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        Connection conn = null;
+        try (DBContext db = new DBContext()) {
+            conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when holding seat");
+                return null;
+            }
+
+            // --- Bắt đầu giao dịch (Transaction) ---
+            conn.setAutoCommit(false);
+
+            // Bước 1: Kiểm tra xem ghế đã bị lấy chưa
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
+                psCheck.setInt(1, tripId);
+                psCheck.setString(2, seatName);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        // Ghế đã bị lấy (rows > 0)
+                        conn.rollback(); // Hủy giao dịch
+                        return null; // Báo thất bại
+                    }
+                }
+            }
+
+            // Bước 2: Ghế vẫn còn trống, tiến hành INSERT để giữ
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime expiryTime = now.plusMinutes(holdDurationMinutes);
+
+            try (PreparedStatement psInsert = conn.prepareStatement(sqlInsert, Statement.RETURN_GENERATED_KEYS)) {
+                psInsert.setInt(1, tripId);
+                psInsert.setString(2, "HELD_BY_" + sessionId); // Dùng GuestEmail để lưu session
+                psInsert.setTimestamp(3, Timestamp.valueOf(now));
+                psInsert.setString(4, "Pending"); // Trạng thái 'Pending' = 'Held'
+                psInsert.setString(5, seatName);
+                psInsert.setString(6, "Held"); // Trạng thái ghế
+                psInsert.setTimestamp(7, Timestamp.valueOf(expiryTime));
+
+                int affected = psInsert.executeUpdate();
+                if (affected > 0) {
+                    try (ResultSet keys = psInsert.getGeneratedKeys()) {
+                        if (keys.next()) {
+                            int newBookingId = keys.getInt(1);
+                            conn.commit(); // Hoàn tất giao dịch
+                            return newBookingId; // Trả về ID của lượt giữ
+                        }
+                    }
+                }
+            }
+
+            // Nếu có lỗi, hủy giao dịch
+            conn.rollback();
+            return null;
+
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to hold seat for trip {} seat {}", tripId, seatName, ex);
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Hủy bỏ một lượt giữ ghế (xóa bản ghi booking 'Pending').
+     *
+     * @param bookingId ID của lượt booking 'Pending'
+     * @param sessionId ID của phiên người dùng (để đảm bảo đúng người hủy)
+     * @return true nếu xóa thành công, false nếu không.
+     */
+    public boolean releaseHeldSeat(int bookingId, String sessionId) {
+        String sql = "DELETE FROM BOOKING WHERE BookingID = ? AND BookingStatus = 'Pending' AND GuestEmail = ?";
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when releasing seat");
+                return false;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, bookingId);
+                ps.setString(2, "HELD_BY_" + sessionId); // Chỉ đúng session mới được hủy
+
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to release seat for booking id {}", bookingId, ex);
+            return false;
+        }
+    }
+
+    /**
+     * Xác nhận một lượt giữ ghế (Pending) thành đã đặt (Confirmed). Cập nhật
+     * thông tin khách hàng vào bản ghi.
+     *
+     * @param bookingId ID của bản ghi booking
+     * @param email Email khách hàng
+     * @param phone SĐT khách hàng
+     * @param fullName Tên khách hàng
+     * @param loggedInUser Người dùng đã đăng nhập (nếu có, có thể là null)
+     * @return true nếu cập nhật thành công
+     */
+    public boolean confirmBooking(int bookingId, String fullName, String email, String phone, User loggedInUser) {
+
+        // Giả sử bảng BOOKING của bạn có các cột GuestFullName, GuestEmail, GuestPhoneNumber
+        // Nếu không có GuestFullName, bạn có thể bỏ nó khỏi câu SQL
+        String sql = "UPDATE BOOKING SET "
+                + "BookingStatus = 'Confirmed', "
+                + "SeatStatus = 'Booked', "
+                + "GuestEmail = ?, "
+                + "GuestPhoneNumber = ?, "
+                // + "GuestFullName = ?, " // <-- Thêm dòng này nếu bạn có cột GuestFullName
+                + "UserID = ?, " // Cập nhật UserID nếu khách đã đăng nhập
+                + "TTL_Expiry = NULL " // Xóa thời gian hết hạn
+                + "WHERE BookingID = ? AND BookingStatus = 'Pending'"; // Chỉ cập nhật vé 'Pending'
+
+        try (DBContext db = new DBContext()) {
+            Connection conn = db.getConnection();
+            if (conn == null) {
+                LOGGER.error("Database connection is null when confirming booking id {}", bookingId);
+                return false;
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                int idx = 1;
+                ps.setString(idx++, email);
+                ps.setString(idx++, phone);
+                // ps.setString(idx++, fullName); // <-- Mở dòng này nếu có cột GuestFullName
+
+                if (loggedInUser != null) {
+                    ps.setInt(idx++, loggedInUser.getUserId());
+                } else {
+                    ps.setNull(idx++, Types.INTEGER); // Khách vãng lai
+                }
+
+                ps.setInt(idx++, bookingId);
+
+                return ps.executeUpdate() > 0;
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Failed to confirm booking with id {}", bookingId, ex);
+            return false;
         }
     }
 }

@@ -12,4 +12,10 @@
     <welcome-file-list>
         <welcome-file>homepage.jsp</welcome-file>
     </welcome-file-list>
+    <context-param>
+        <param-name>SMTP_USER</param-name>
+        <param-value>busbookingonlineswd391@gmail.com</param-value> </context-param>
+    <context-param>
+        <param-name>SMTP_PASS</param-name>
+        <param-value>rbxs dice nqhc befn</param-value> </context-param>
 </web-app>

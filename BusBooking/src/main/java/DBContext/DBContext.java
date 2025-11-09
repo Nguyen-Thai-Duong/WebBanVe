@@ -15,7 +15,7 @@ public class DBContext implements AutoCloseable {
     
     private static final String DEFAULT_URL = "jdbc:sqlserver://localhost:1433;databaseName=BusBookingSystem;trustServerCertificate=true;encrypt=true";
     private static final String DEFAULT_USER = "sa";
-    private static final String DEFAULT_PASSWORD = "123456";
+    private static final String DEFAULT_PASSWORD = "123";
 
     private Connection connection;
 
