@@ -9,6 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import model.User;
+import strategy.RoleRedirectStrategyFactory;
 import util.PasswordUtils;
 
 /**
@@ -103,20 +104,7 @@ public class AuthController extends HttpServlet {
     private String resolveRedirectPath(User user, HttpServletRequest request) {
         String contextPath = request.getContextPath();
         String role = user != null ? user.getRole() : null;
-        if (role == null) {
-            return contextPath + "/homepage.jsp";
-        }
-        switch (role) {
-            case "Admin":
-                return contextPath + "/admin/dashboard";
-            case "BusOperator":
-                return contextPath + "/bus-operator/dashboard";
-            case "Staff":
-                return contextPath + "/staff/dashboard";
-            case "Customer":
-            default:
-                return contextPath + "/homepage.jsp";
-        }
+        return RoleRedirectStrategyFactory.get(role).resolve(user, contextPath);
     }
 
     private String trim(String value) {
