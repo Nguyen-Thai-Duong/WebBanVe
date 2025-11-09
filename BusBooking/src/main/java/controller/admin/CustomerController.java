@@ -1,6 +1,5 @@
 package controller.admin;
 
-import DAO.CustomerDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -8,14 +7,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import model.User;
-import util.InputValidator;
-import util.PasswordUtils;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import service.admin.AdminCustomerService;
 
 /**
  * Controller for managing customer accounts in the admin module.
@@ -24,12 +19,10 @@ import org.slf4j.LoggerFactory;
 public class CustomerController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger LOGGER = LoggerFactory.getLogger(CustomerController.class);
-    private static final String DEFAULT_ROLE = "Customer";
     private static final String[] CUSTOMER_STATUSES = {"Active", "Inactive", "Suspended", "Locked"};
     private static final DateTimeFormatter TABLE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    private final CustomerDAO customerDAO = new CustomerDAO();
+    private final AdminCustomerService customerService = new AdminCustomerService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -71,63 +64,60 @@ public class CustomerController extends HttpServlet {
     }
 
     private void handleCreate(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        User customer = buildCustomerFromRequest(request, true);
-        if (!isValidCustomer(customer, true)) {
+        User customer = customerService.buildCustomerFromRequest(request, true);
+        if (!customerService.isValidCustomer(customer, true)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
             response.sendRedirect(request.getContextPath() + "/admin/customers/new");
             return;
         }
-        if (!validateCustomerFields(request, customer)) {
+        if (!customerService.validateCustomerFields(request.getSession(), customer)) {
             response.sendRedirect(request.getContextPath() + "/admin/customers/new");
             return;
         }
-        boolean created = customerDAO.insert(customer);
+        boolean created = customerService.createCustomer(customer);
         setFlash(request.getSession(), created ? "success" : "danger",
                 created ? "Tạo khách hàng thành công." : "Không thể tạo khách hàng. Vui lòng thử lại.");
         response.sendRedirect(request.getContextPath() + "/admin/customers");
     }
 
     private void handleUpdate(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        User customer = buildCustomerFromRequest(request, false);
-        customer.setUserId(parseInteger(request.getParameter("userId")));
+        User customer = customerService.buildCustomerFromRequest(request, false);
+        customer.setUserId(customerService.parseInteger(request.getParameter("userId")));
         if (customer.getUserId() == null) {
             setFlash(request.getSession(), "danger", "Thiếu mã khách hàng cần cập nhật.");
             response.sendRedirect(request.getContextPath() + "/admin/customers");
             return;
         }
-        if (!isValidCustomer(customer, false)) {
+        if (!customerService.isValidCustomer(customer, false)) {
             setFlash(request.getSession(), "danger", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
             response.sendRedirect(request.getContextPath() + "/admin/customers/edit?userId=" + customer.getUserId());
             return;
         }
-        if (!validateCustomerFields(request, customer)) {
+        if (!customerService.validateCustomerFields(request.getSession(), customer)) {
             response.sendRedirect(request.getContextPath() + "/admin/customers/edit?userId=" + customer.getUserId());
             return;
         }
-        boolean updated = customerDAO.update(customer);
+        boolean updated = customerService.updateCustomer(customer);
         setFlash(request.getSession(), updated ? "success" : "danger",
                 updated ? "Cập nhật khách hàng thành công." : "Không thể cập nhật khách hàng. Vui lòng thử lại.");
         response.sendRedirect(request.getContextPath() + "/admin/customers");
     }
 
     private void handleDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Integer userId = parseInteger(request.getParameter("userId"));
+        Integer userId = customerService.parseInteger(request.getParameter("userId"));
         if (userId == null) {
             setFlash(request.getSession(), "danger", "Thiếu mã khách hàng cần xóa.");
             response.sendRedirect(request.getContextPath() + "/admin/customers");
             return;
         }
-        boolean deleted = customerDAO.delete(userId);
+        boolean deleted = customerService.deleteCustomer(userId);
         setFlash(request.getSession(), deleted ? "success" : "danger",
                 deleted ? "Đã xóa khách hàng." : "Không thể xóa khách hàng. Vui lòng thử lại.");
         response.sendRedirect(request.getContextPath() + "/admin/customers");
     }
 
     private void loadCustomers(HttpServletRequest request) {
-        List<User> customers = customerDAO.findAll();
-        if (customers == null) {
-            customers = Collections.emptyList();
-        }
+        List<User> customers = customerService.getAllCustomers();
         request.setAttribute("customers", customers);
         request.setAttribute("activeMenu", "customers");
         request.setAttribute("customerStatuses", CUSTOMER_STATUSES);
@@ -142,13 +132,13 @@ public class CustomerController extends HttpServlet {
     }
 
     private void handleEditForm(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        Integer userId = parseInteger(request.getParameter("userId"));
+        Integer userId = customerService.parseInteger(request.getParameter("userId"));
         if (userId == null) {
             setFlash(request.getSession(), "danger", "Thiếu mã khách hàng cần chỉnh sửa.");
             response.sendRedirect(request.getContextPath() + "/admin/customers");
             return;
         }
-        User customer = customerDAO.findById(userId);
+        User customer = customerService.getCustomerById(userId);
         if (customer == null) {
             setFlash(request.getSession(), "danger", "Không tìm thấy khách hàng.");
             response.sendRedirect(request.getContextPath() + "/admin/customers");
@@ -165,60 +155,6 @@ public class CustomerController extends HttpServlet {
         } else {
             response.sendRedirect(request.getContextPath() + "/admin/customers");
         }
-    }
-
-    private User buildCustomerFromRequest(HttpServletRequest request, boolean requirePassword) {
-        User customer = new User();
-        customer.setFullName(defaultIfBlank(request.getParameter("fullName"), null));
-        customer.setEmail(defaultIfBlank(request.getParameter("email"), null));
-        customer.setPhoneNumber(defaultIfBlank(request.getParameter("phoneNumber"), null));
-        customer.setAddress(defaultIfBlank(request.getParameter("address"), null));
-        customer.setStatus(defaultIfBlank(request.getParameter("status"), "Active"));
-        customer.setRole(DEFAULT_ROLE);
-
-        String password = request.getParameter("password");
-        if (password != null && !password.isBlank()) {
-            try {
-                customer.setPasswordHash(PasswordUtils.hashPassword(password));
-            } catch (RuntimeException ex) {
-                LOGGER.error("Không thể mã hóa mật khẩu", ex);
-                customer.setPasswordHash(null);
-            }
-        } else if (requirePassword) {
-            customer.setPasswordHash(null);
-        }
-        return customer;
-    }
-
-    private boolean isValidCustomer(User customer, boolean requirePassword) {
-        return customer.getFullName() != null && !customer.getFullName().isBlank()
-                && customer.getEmail() != null && !customer.getEmail().isBlank()
-                && customer.getPhoneNumber() != null && !customer.getPhoneNumber().isBlank()
-                && (!requirePassword || (customer.getPasswordHash() != null && !customer.getPasswordHash().isBlank()));
-    }
-
-    private boolean validateCustomerFields(HttpServletRequest request, User customer) {
-        if (!InputValidator.isAlphabeticName(customer.getFullName())) {
-            setFlash(request.getSession(), "danger", "Họ và tên chỉ được chứa chữ cái và khoảng trắng.");
-            return false;
-        }
-        if (!InputValidator.isDigitsOnly(customer.getPhoneNumber())) {
-            setFlash(request.getSession(), "danger", "Số điện thoại chỉ được chứa chữ số.");
-            return false;
-        }
-        return true;
-    }
-
-    private Integer parseInteger(String value) {
-        try {
-            return value != null && !value.isBlank() ? Integer.valueOf(value) : null;
-        } catch (NumberFormatException ex) {
-            return null;
-        }
-    }
-
-    private String defaultIfBlank(String value, String defaultValue) {
-        return (value == null || value.isBlank()) ? defaultValue : value.trim();
     }
 
     private void setFlash(HttpSession session, String type, String message) {

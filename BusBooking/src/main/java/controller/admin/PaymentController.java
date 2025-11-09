@@ -1,6 +1,5 @@
 package controller.admin;
 
-import DAO.PaymentDAO;
 import dto.PaymentAdminView;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -8,12 +7,12 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import service.admin.AdminPaymentService;
+import service.admin.BaseAdminService;
+
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Controller responsible for payment management within the admin console.
@@ -22,11 +21,10 @@ import org.slf4j.LoggerFactory;
 public class PaymentController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger LOGGER = LoggerFactory.getLogger(PaymentController.class);
-
     private static final DateTimeFormatter DISPLAY_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    private final PaymentDAO paymentDAO = new PaymentDAO();
+    private final AdminPaymentService paymentService = new AdminPaymentService();
+    private final BaseAdminService baseService = new BaseAdminService() {};
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -44,10 +42,7 @@ public class PaymentController extends HttpServlet {
     }
 
     private void showPaymentList(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<PaymentAdminView> payments = paymentDAO.findAll();
-        if (payments == null) {
-            payments = Collections.emptyList();
-        }
+        List<PaymentAdminView> payments = paymentService.getAllPayments();
         request.setAttribute("payments", payments);
         request.setAttribute("dateFormatter", DISPLAY_FORMATTER);
         request.setAttribute("activeMenu", "payments");
@@ -55,13 +50,13 @@ public class PaymentController extends HttpServlet {
     }
 
     private void showPaymentDetail(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        Integer paymentId = parseInteger(request.getParameter("paymentId"));
+        Integer paymentId = baseService.parseInteger(request.getParameter("paymentId"));
         if (paymentId == null) {
             setFlash(request.getSession(), "paymentMessage", "Không tìm thấy giao dịch thanh toán.", "danger");
             response.sendRedirect(request.getContextPath() + "/admin/payments");
             return;
         }
-        PaymentAdminView payment = paymentDAO.findById(paymentId);
+        PaymentAdminView payment = paymentService.getPaymentById(paymentId);
         if (payment == null) {
             setFlash(request.getSession(), "paymentMessage", "Không tìm thấy giao dịch thanh toán.", "danger");
             response.sendRedirect(request.getContextPath() + "/admin/payments");
@@ -81,15 +76,6 @@ public class PaymentController extends HttpServlet {
 
     private void forward(HttpServletRequest request, HttpServletResponse response, String path) throws ServletException, IOException {
         request.getRequestDispatcher(path).forward(request, response);
-    }
-
-    private Integer parseInteger(String value) {
-        try {
-            return value != null && !value.isBlank() ? Integer.valueOf(value) : null;
-        } catch (NumberFormatException ex) {
-            LOGGER.warn("Failed to parse integer value: {}", value);
-            return null;
-        }
     }
 
     @Override
