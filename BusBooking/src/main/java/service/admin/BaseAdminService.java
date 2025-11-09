@@ -15,7 +15,7 @@ public abstract class BaseAdminService {
      * @param message the message text
      * @param type the message type (success, danger, warning, info)
      */
-    protected void setFlash(HttpSession session, String key, String message, String type) {
+    public void setFlash(HttpSession session, String key, String message, String type) {
         if (session != null) {
             session.setAttribute(key, message);
             session.setAttribute(key + "Type", type);
@@ -28,7 +28,7 @@ public abstract class BaseAdminService {
      * @param value the string value
      * @return the integer value, or null if parsing fails
      */
-    protected Integer parseInteger(String value) {
+    public Integer parseInteger(String value) {
         try {
             return value != null && !value.isBlank() ? Integer.valueOf(value) : null;
         } catch (NumberFormatException ex) {
