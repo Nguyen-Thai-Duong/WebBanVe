@@ -1,7 +1,5 @@
 package controller.admin;
 
-import DAO.RouteDAO;
-import DAO.TripDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,6 +17,7 @@ import model.Route;
 import model.Trip;
 import model.User;
 import model.Vehicle;
+import service.admin.AdminTripService;
 import util.InputValidator;
 
 /**
@@ -34,8 +33,7 @@ public class TripController extends HttpServlet {
     private static final String ACTIVE_ROUTE_STATUS = "Active";
     private static final int MAX_TRIPS_PER_ROUTE = 5;
 
-    private final TripDAO tripDAO = new TripDAO();
-    private final RouteDAO routeDAO = new RouteDAO();
+    private final AdminTripService tripService = new AdminTripService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -43,10 +41,7 @@ public class TripController extends HttpServlet {
         String path = request.getServletPath();
         switch (path) {
             case "/admin/trips":
-                List<Trip> trips = tripDAO.findAll();
-                if (trips == null) {
-                    trips = Collections.emptyList();
-                }
+                List<Trip> trips = tripService.getAllTrips();
                 request.setAttribute("trips", trips);
                 request.setAttribute("tableFormatter", TABLE_FORMATTER);
                 request.setAttribute("activeMenu", "trips");
@@ -100,7 +95,7 @@ public class TripController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/trips/new");
             return;
         }
-        boolean created = tripDAO.insert(trip);
+        boolean created = tripService.createTrip(trip);
         if (created) {
             setFlash(request.getSession(), "success", "Tạo chuyến đi thành công.");
         } else {
@@ -131,7 +126,7 @@ public class TripController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/trips/edit?tripId=" + trip.getTripId());
             return;
         }
-        boolean updated = tripDAO.update(trip);
+        boolean updated = tripService.updateTrip(trip);
         if (updated) {
             setFlash(request.getSession(), "success", "Cập nhật chuyến đi thành công.");
         } else {
@@ -147,7 +142,7 @@ public class TripController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/trips");
             return;
         }
-        boolean deleted = tripDAO.delete(tripId);
+        boolean deleted = tripService.deleteTrip(tripId);
         if (deleted) {
             setFlash(request.getSession(), "success", "Đã xóa chuyến đi.");
         } else {
@@ -179,9 +174,9 @@ public class TripController extends HttpServlet {
     }
 
     private void prepareTripForm(HttpServletRequest request, Trip trip) {
-        List<Route> routes = tripDAO.findRoutes();
-        List<Vehicle> vehicles = tripDAO.findVehicles();
-        List<User> operators = tripDAO.findOperators();
+        List<Route> routes = tripService.findRoutes();
+        List<Vehicle> vehicles = tripService.findVehicles();
+        List<User> operators = tripService.findOperators();
         request.setAttribute("trip", trip);
         request.setAttribute("routes", routes);
         request.setAttribute("vehicles", vehicles);
@@ -203,7 +198,7 @@ public class TripController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/trips");
             return;
         }
-        Trip trip = tripDAO.findById(tripId);
+        Trip trip = tripService.getTripById(tripId);
         if (trip == null) {
             setFlash(request.getSession(), "danger", "Không tìm thấy chuyến đi.");
             response.sendRedirect(request.getContextPath() + "/admin/trips");
@@ -271,12 +266,12 @@ public class TripController extends HttpServlet {
             setFlash(request.getSession(), "danger", "Vui lòng chọn tuyến đường hợp lệ.");
             return false;
         }
-        Route selectedRoute = routeDAO.findById(routeId);
+        Route selectedRoute = tripService.getRouteById(routeId);
         if (selectedRoute == null) {
             setFlash(request.getSession(), "danger", "Không tìm thấy tuyến đường đã chọn.");
             return false;
         }
-        int scheduledTrips = tripDAO.countTripsByRoute(routeId, trip.getTripId());
+        int scheduledTrips = tripService.countTripsByRoute(routeId, trip.getTripId());
         if (scheduledTrips >= MAX_TRIPS_PER_ROUTE) {
             setFlash(request.getSession(), "danger", "Tuyến đường đã có đủ " + MAX_TRIPS_PER_ROUTE + " chuyến.");
             return false;

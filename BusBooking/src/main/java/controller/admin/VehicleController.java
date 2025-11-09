@@ -1,7 +1,5 @@
 package controller.admin;
 
-import DAO.OperatorDAO;
-import DAO.VehicleDAO;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -17,20 +15,17 @@ import java.util.Collections;
 import java.util.List;
 import model.User;
 import model.Vehicle;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import service.admin.AdminVehicleService;
 
 @WebServlet(name = "VehicleController", urlPatterns = {"/admin/vehicles", "/admin/vehicles/new", "/admin/vehicles/edit"})
 public class VehicleController extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-    private static final Logger LOGGER = LoggerFactory.getLogger(VehicleController.class);
     private static final String[] VEHICLE_STATUSES = {"Available", "In Service", "Maintenance", "Repair", "Retired"};
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private final VehicleDAO vehicleDAO = new VehicleDAO();
-    private final OperatorDAO operatorDAO = new OperatorDAO();
+    private final AdminVehicleService vehicleService = new AdminVehicleService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -60,10 +55,7 @@ public class VehicleController extends HttpServlet {
     }
 
     private void showVehicleList(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        List<Vehicle> vehicles = vehicleDAO.findAll();
-        if (vehicles == null) {
-            vehicles = Collections.emptyList();
-        }
+        List<Vehicle> vehicles = vehicleService.getAllVehicles();
         request.setAttribute("vehicles", vehicles);
         request.setAttribute("vehicleStatuses", VEHICLE_STATUSES);
         request.setAttribute("dateTimeFormatter", DATE_TIME_FORMATTER);
@@ -78,15 +70,15 @@ public class VehicleController extends HttpServlet {
     }
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        Integer vehicleId = parseInteger(request.getParameter("id"));
+        Integer vehicleId = vehicleService.parseInteger(request.getParameter("id"));
         if (vehicleId == null) {
-            setFlash(request.getSession(), "vehicleMessage", "Không tìm thấy phương tiện.", "danger");
+            vehicleService.setFlash(request.getSession(), "vehicleMessage", "Không tìm thấy phương tiện.", "danger");
             response.sendRedirect(request.getContextPath() + "/admin/vehicles");
             return;
         }
-        Vehicle vehicle = vehicleDAO.findById(vehicleId);
+        Vehicle vehicle = vehicleService.getVehicleById(vehicleId);
         if (vehicle == null) {
-            setFlash(request.getSession(), "vehicleMessage", "Không tìm thấy phương tiện.", "danger");
+            vehicleService.setFlash(request.getSession(), "vehicleMessage", "Không tìm thấy phương tiện.", "danger");
             response.sendRedirect(request.getContextPath() + "/admin/vehicles");
             return;
         }
@@ -102,7 +94,7 @@ public class VehicleController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/vehicles/new");
             return;
         }
-        boolean created = vehicleDAO.insert(vehicle);
+        boolean created = vehicleService.createVehicle(vehicle);
         setFlash(request.getSession(), "vehicleMessage", created ? "Tạo phương tiện thành công." : "Không thể tạo phương tiện.", created ? "success" : "danger");
         response.sendRedirect(request.getContextPath() + "/admin/vehicles");
     }
@@ -121,7 +113,7 @@ public class VehicleController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/vehicles/edit?id=" + vehicleId);
             return;
         }
-        boolean updated = vehicleDAO.update(vehicle);
+        boolean updated = vehicleService.updateVehicle(vehicle);
         setFlash(request.getSession(), "vehicleMessage", updated ? "Cập nhật phương tiện thành công." : "Không thể cập nhật phương tiện.", updated ? "success" : "danger");
         response.sendRedirect(request.getContextPath() + "/admin/vehicles");
     }
@@ -140,7 +132,7 @@ public class VehicleController extends HttpServlet {
         if (vehicleId == null) {
             setFlash(request.getSession(), "vehicleMessage", "Không tìm thấy phương tiện để xóa.", "danger");
         } else {
-            boolean deleted = vehicleDAO.delete(vehicleId);
+            boolean deleted = vehicleService.deleteVehicle(vehicleId);
             setFlash(request.getSession(), "vehicleMessage", deleted ? "Đã xóa phương tiện." : "Không thể xóa phương tiện.", deleted ? "success" : "danger");
         }
         response.sendRedirect(request.getContextPath() + "/admin/vehicles");
@@ -175,7 +167,7 @@ public class VehicleController extends HttpServlet {
     }
 
     private void prepareVehicleForm(HttpServletRequest request, Vehicle vehicle) {
-        List<User> operators = operatorDAO.findAll();
+        List<User> operators = vehicleService.getAllOperators();
         if (operators == null) {
             operators = Collections.emptyList();
         } else {
@@ -207,7 +199,6 @@ public class VehicleController extends HttpServlet {
         try {
             return value != null && !value.isBlank() ? Integer.valueOf(value) : null;
         } catch (NumberFormatException ex) {
-            LOGGER.warn("Failed to parse integer value: {}", value);
             return null;
         }
     }
@@ -216,7 +207,6 @@ public class VehicleController extends HttpServlet {
         try {
             return value != null && !value.isBlank() ? LocalDate.parse(value) : null;
         } catch (Exception ex) {
-            LOGGER.warn("Failed to parse date value: {}", value);
             return null;
         }
     }

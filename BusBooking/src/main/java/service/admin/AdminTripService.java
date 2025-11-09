@@ -4,6 +4,8 @@ import DAO.TripDAO;
 import DAO.RouteDAO;
 import model.Trip;
 import model.Route;
+import model.User;
+import model.Vehicle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +51,47 @@ public class AdminTripService extends BaseAdminService {
     public List<Route> getActiveRoutes() {
         List<Route> routes = routeDAO.findAll();
         return routes != null ? routes : Collections.emptyList();
+    }
+    
+    /**
+     * Get all routes for form.
+     */
+    public List<Route> findRoutes() {
+        List<Route> routes = tripDAO.findRoutes();
+        return routes != null ? routes : Collections.emptyList();
+    }
+    
+    /**
+     * Get all vehicles for form.
+     */
+    public List<Vehicle> findVehicles() {
+        List<Vehicle> vehicles = tripDAO.findVehicles();
+        return vehicles != null ? vehicles : Collections.emptyList();
+    }
+    
+    /**
+     * Get all operators for form.
+     */
+    public List<User> findOperators() {
+        List<User> operators = tripDAO.findOperators();
+        return operators != null ? operators : Collections.emptyList();
+    }
+    
+    /**
+     * Get route by ID.
+     */
+    public Route getRouteById(Integer routeId) {
+        if (routeId == null) {
+            return null;
+        }
+        return routeDAO.findById(routeId);
+    }
+    
+    /**
+     * Count trips by route.
+     */
+    public int countTripsByRoute(Integer routeId, Integer excludeTripId) {
+        return tripDAO.countTripsByRoute(routeId, excludeTripId);
     }
     
     /**
